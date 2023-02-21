@@ -27,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
         }
       })
       models.Associate.hasMany(models.Mission)
-      models.Associate.belongsToMany(models.Project, { through: 'Associate_Project' });
       models.Associate.belongsToMany(models.Job, { through: 'Associate_Job' });
     }
   }
