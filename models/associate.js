@@ -13,17 +13,12 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       models.Associate.belongsTo(models.Graduation, {
         foreignKey: {
-          allowNull: false
-        }
-      })
-      models.Associate.belongsTo(models.Pole, {
-        foreignKey: {
-          allowNull: false
+          // allowNull: false
         }
       })
       models.Associate.belongsTo(models.Gender, {
         foreignKey: {
-          allowNull: false
+          // allowNull: false
         }
       })
       models.Associate.hasMany(models.Mission)
@@ -37,10 +32,8 @@ module.exports = (sequelize, DataTypes) => {
     birthdate: DataTypes.DATEONLY,
     telephone: DataTypes.INTEGER,
     mail: DataTypes.STRING,
-    hourRate: DataTypes.INTEGER,
     graduation_id: DataTypes.INTEGER,
     gender_id: DataTypes.INTEGER,
-    pole_id: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Associate',

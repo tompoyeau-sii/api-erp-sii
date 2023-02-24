@@ -6,8 +6,8 @@ exports.router = (function () {
   const apiRouter = express.Router();
 
   //Account routes
-  apiRouter.route("/account/register/").post(accountController.register);
-  apiRouter.route("/account/login/").post(accountController.login);
+  apiRouter.route("/register/").post(accountController.register);
+  apiRouter.route("/login/").post(accountController.login);
 
   //Customer routes
   apiRouter.route("/customer").post(customerController.create);

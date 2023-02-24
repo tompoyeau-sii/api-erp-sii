@@ -8,16 +8,16 @@ module.exports = {
         const birthdate = req.body.birthdate;
         const telephone = req.body.telephone;
         const mail = req.body.mail;
-        const hourRate = req.body.hourRate;
+        const start_date = req.body.start_date;
         if (
-            name == null ||
-            first_name == null ||
-            birthdate == null ||
-            telephone == null ||
-            mail == null ||
-            hourRate == null
+            name == null 
+            || first_name == null 
+            || birthdate == null 
+            || telephone == null
+            || mail == null
+            || start_date == null
         ) {
-            return res.status(400).json({ error: "missing parameters" });
+            return res.status(400).json({ error: "Paramètres manquants" });
         }
 
         models.Associate.findOne({
@@ -32,7 +32,7 @@ module.exports = {
                         birthdate: birthdate,
                         telephone: telephone,
                         mail: mail,
-                        hourRate: hourRate
+                        start_date: start_date,
                     })
                         .then(function (newAssociate) {
                             return res.status(201).json({
@@ -40,6 +40,7 @@ module.exports = {
                             });
                         })
                         .catch(function (err) {
+                            console.log(err)
                             return res.status(500).json({ error: "cannot add associate" });
                         });
                 } else {
@@ -53,7 +54,7 @@ module.exports = {
 
     findAll: function (req, res) {
         models.Associate.findAll({
-            attributes: ["id", "name", "first_name", "hourRate", "birthdate"],
+            attributes: ["id", "name", "first_name", "birthdate", "mail", "telephone", "start_date"],
         })
             .then((associate) => {
                 return res.status(201).json({
@@ -62,4 +63,8 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
+
+    findOne: function(res,res) {
+        
+    }
 };
