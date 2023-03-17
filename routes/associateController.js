@@ -1,4 +1,5 @@
 const models = require("../models");
+const graduation = require("../models/graduation");
 
 module.exports = {
     //Creation of an associate
@@ -10,9 +11,9 @@ module.exports = {
         const mail = req.body.mail;
         const start_date = req.body.start_date;
         if (
-            name == null 
-            || first_name == null 
-            || birthdate == null 
+            name == null
+            || first_name == null
+            || birthdate == null
             || telephone == null
             || mail == null
             || start_date == null
@@ -54,17 +55,81 @@ module.exports = {
 
     findAll: function (req, res) {
         models.Associate.findAll({
-            attributes: ["id", "name", "first_name", "birthdate", "mail", "telephone", "start_date"],
+            include: [
+                {
+                    model: models.Graduation,
+                    foreignKey: "graduation_id",
+
+                },
+                {
+                    model: models.Mission,
+                    foreignKey: "associate_id",
+                    include: [
+                        {
+                            model: models.Project,
+                            foreignKey: "project_id",
+                            // limit: 1,
+                            include: [
+                                {
+                                    model: models.Customer,
+                                    foreignKey: 'customer_id'
+                                },
+                                {
+                                    model: models.Associate,
+                                    foreignKey: 'manager_id'
+                                }
+                            ]
+
+
+                        }
+                    ]
+
+                },
+
+            ]
+        }).then((associate) => {
+            return res.status(201).json({
+                associate,
+            });
         })
-            .then((associate) => {
-                return res.status(201).json({
-                    associate,
-                });
-            })
             .catch((error) => console.error(error));
     },
 
-    findOne: function(res,res) {
-        
-    }
+    // Récupérer un client par son identifiant
+    findById: function (req, res) {
+        const associateId = req.params.id;
+
+        models.Associate.findOne({
+            where: { id: associateId },
+        })
+            .then((associate) => {
+                if (!associate) {
+                    return res.status(404).json({ error: "associate not found" });
+                }
+
+                return res.status(200).json(associate);
+            })
+            .catch((error) => {
+                console.error(error);
+                return res.status(500).json({ error: "unable to fetch associate" });
+            });
+    },
+    findByName: function (req, res) {
+        const associateName = req.params.name;
+
+        models.Associate.findOne({
+            where: { name: associateName },
+        })
+            .then((associate) => {
+                if (!associate) {
+                    return res.status(404).json({ error: "customer not found" });
+                }
+
+                return res.status(200).json(associate);
+            })
+            .catch((error) => {
+                console.error(error);
+                return res.status(500).json({ error: "unable to fetch customer" });
+            });
+    },
 };

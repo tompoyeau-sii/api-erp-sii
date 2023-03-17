@@ -38,6 +38,7 @@ module.exports = {
             return res.status(500).json({ 'error': 'unable to verify account' })
           })
       },
+      //Vérification si le compte existe
       function (accoundFound, done) {
         if (!accoundFound) {
           bcrypt.hash(password, 5, function (err, bcryptedPassword) {
@@ -101,14 +102,14 @@ module.exports = {
             done(null, accountFound, resBycrypt);
           });
         } else {
-          return res.status(404).json({ 'error': 'account not exist in DB' });
+          return res.status(404).json({ 'error': 'Compte inexistant' });
         }
       },
       function (accountFound, resBycrypt, done) {
         if (resBycrypt) {
           done(accountFound);
         } else {
-          return res.status(403).json({ 'error': 'invalid password' });
+          return res.status(403).json({ 'error': 'Mot de passe incorrect' });
         }
       }
     ], function (accountFound) {

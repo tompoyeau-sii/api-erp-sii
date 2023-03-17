@@ -13,16 +13,23 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Project.belongsTo(models.Customer, {
-        foreignKey: {
-          allowNull: false
-        }
+        foreignKey: "customer_id",
       })
-      models.Project.hasMany(models.Mission)
+
+      models.Project.belongsTo(models.Associate, {
+        foreignKey: 'manager_id'
+      })
+
+      models.Project.hasMany(models.Mission, {
+        foreignKey: 'project_id'
+      })
+      
     }
   }
   Project.init({
     customer_id: DataTypes.INTEGER,
-    label: DataTypes.STRING
+    label: DataTypes.STRING,
+    manager_id: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Project',

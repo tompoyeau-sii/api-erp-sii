@@ -2,6 +2,12 @@ const express = require("express");
 const accountController = require("./routes/accountController");
 const associateController = require("./routes/associateController");
 const customerController = require("./routes/customerController");
+const genderController = require("./routes/genderController");
+const graduationController = require("./routes/graduationController");
+const jobController = require("./routes/jobController");
+const projectController = require("./routes/projectController");
+const missionController = require("./routes/missionController");
+
 exports.router = (function () {
   const apiRouter = express.Router();
 
@@ -11,11 +17,35 @@ exports.router = (function () {
 
   //Customer routes
   apiRouter.route("/customer").post(customerController.create);
-  apiRouter.route("/customer").get(customerController.findAll);
+  apiRouter.route("/customers").get(customerController.findAll);
+  // apiRouter.route("/customer/:id").get(customerController.findById);
+  apiRouter.route("/customer/:label").get(customerController.findByName);
 
   //Associate routes
   apiRouter.route("/associate").post(associateController.create)
-  apiRouter.route("/associate").get(associateController.findAll)
+  apiRouter.route("/associates").get(associateController.findAll)
+  apiRouter.route("/associate/:id").get(associateController.findById);
+
+  //Job routes
+  apiRouter.route("/job").post(jobController.create)
+  apiRouter.route("/jobs").get(jobController.findAll)
+
+  //Gender routes
+  apiRouter.route("/gender").post(genderController.create)
+  apiRouter.route("/genders").get(genderController.findAll)
+
+  //graduation routes
+  apiRouter.route("/graduation").post(graduationController.create)
+  apiRouter.route("/graduations").get(graduationController.findAll)
+
+  //project routes
+  apiRouter.route("/project").post(projectController.create)
+  apiRouter.route("/projects").get(projectController.findAll)
+
+  //mission routes
+  apiRouter.route("/mission").post(missionController.create)
+  apiRouter.route("/missions").get(missionController.findAll)
+
 
   return apiRouter;
 })();

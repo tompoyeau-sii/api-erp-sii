@@ -12,17 +12,23 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Associate.belongsTo(models.Graduation, {
-        foreignKey: {
-          // allowNull: false
-        }
+        foreignKey: "graduation_id"
       })
+
       models.Associate.belongsTo(models.Gender, {
-        foreignKey: {
-          // allowNull: false
-        }
+        foreignKey: 'gender_id'
       })
-      models.Associate.hasMany(models.Mission)
-      models.Associate.hasMany(models.PRU)
+      models.Associate.hasMany(models.Mission, {
+        foreignKey: 'associate_id'
+      })
+
+      models.Associate.hasMany(models.Project, {
+        foreignKey: 'manager_id'
+      })
+
+      models.Associate.hasMany(models.PRU, {
+        foreignKey: 'associate_id'
+      })
       models.Associate.belongsToMany(models.Job, { through: 'Associate_Job' });
     }
   }
@@ -34,6 +40,8 @@ module.exports = (sequelize, DataTypes) => {
     mail: DataTypes.STRING,
     graduation_id: DataTypes.INTEGER,
     gender_id: DataTypes.INTEGER,
+    tutor_id: DataTypes.INTEGER,
+    isManager: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'Associate',

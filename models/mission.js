@@ -12,20 +12,21 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Mission.belongsTo(models.Project, {
-        foreignKey: {
-          allowNull: false
-        }
+        foreignKey: 'project_id'
       })
       models.Mission.belongsTo(models.Associate, {
-        foreignKey: {
-          allowNull: false
-        }
+        foreignKey: 'associate_id'
       })
-      models.Mission.hasMany(models.TJM)
-      models.Mission.hasMany(models.Imputation)
+      models.Mission.hasMany(models.TJM, {
+        foreignKey: 'mission_id'
+      })
+      models.Mission.hasMany(models.Imputation, {
+        foreignKey: 'mission_id'
+      })
     }
   }
   Mission.init({
+    label: DataTypes.STRING,
     project_id: DataTypes.INTEGER,
     associate_id: DataTypes.INTEGER,
     start_date: DataTypes.DATEONLY,
