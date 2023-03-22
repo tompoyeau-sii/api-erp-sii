@@ -72,7 +72,8 @@ module.exports = {
                             include: [
                                 {
                                     model: models.Customer,
-                                    foreignKey: 'customer_id'
+                                    foreignKey: 'customer_id',
+                                    duplicating: false
                                 },
                                 {
                                     model: models.Associate,

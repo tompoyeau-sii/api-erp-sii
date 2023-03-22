@@ -1,27 +1,44 @@
 const models = require("../models");
+const { Op } = require("sequelize");
 
 module.exports = {
     create: function (req, res) {
         const label = req.body.label;
-        const mission_id = req.body.mission_id;
         const associate_id = req.body.associate_id;
+        const project_id = req.body.project_id;
+        const start_date = req.body.start_date;
+        let end_date = req.body.end_date;
+        if (req.body.end_date == null) {
+            end_date = '9999-12-31';
+        } 
         if (
-            label == null,
-            mission_id == null,
-            associate_id == null
+            project_id == null,
+            associate_id == null,
+            start_date == null
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
-        models.Project.findOne({
-            attributes: ["label"],
-            where: { label: label },
+        if(start_date > end_date){
+            return res.status(400).json({ error: "La date de début doit être inférieur à la date de fin de la mission" });
+        }
+
+        models.Mission.findOne({
+            where: { 
+                associate_id: associate_id, 
+                project_id: project_id,
+                end_date: {
+                    [Op.gt]: start_date
+                }
+             },
         })
             .then(function (missionFound) {
                 if (!missionFound) {
                     const newMission = models.Mission.create({
                         label: label,
-                        mission_id: mission_id,
                         associate_id: associate_id,
+                        project_id: project_id,
+                        start_date: start_date,
+                        end_date: end_date,
                     })
                         .then(function (newMission) {
                             return res.status(201).json({
@@ -33,7 +50,7 @@ module.exports = {
                             return res.status(500).json({ error: "cannot add mission" });
                         });
                 } else {
-                    return res.status(409).json({ error: "mission already exist" });
+                    return res.status(409).json({ error: "Une mission pour ce client et ce collaborateur est déjà en cours sur cette période." });
                 }
             })
             .catch(function (err) {

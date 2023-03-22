@@ -27,8 +27,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   Mission.init({
     label: DataTypes.STRING,
-    project_id: DataTypes.INTEGER,
     associate_id: DataTypes.INTEGER,
+    project_id: DataTypes.INTEGER,
     start_date: DataTypes.DATEONLY,
     end_date: DataTypes.DATEONLY
   }, {

@@ -40,6 +40,8 @@ module.exports = (sequelize, DataTypes) => {
     mail: DataTypes.STRING,
     graduation_id: DataTypes.INTEGER,
     gender_id: DataTypes.INTEGER,
+    start_date: DataTypes.DATEONLY,
+    end_date: DataTypes.DATEONLY,
     tutor_id: DataTypes.INTEGER,
     isManager: DataTypes.BOOLEAN
   }, {
