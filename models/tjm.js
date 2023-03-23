@@ -12,9 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.TJM.belongsTo(models.Mission, {
-        foreignKey: {
-          allowNull: false
-        }
+        foreignKey: 'mission_id'
       })
     }
   }

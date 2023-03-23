@@ -52,14 +52,12 @@ module.exports = {
                 return res.status(500).json({ error: "unable to verify account" });
             });
     },
-
     findAll: function (req, res) {
         models.Associate.findAll({
             include: [
                 {
                     model: models.Graduation,
                     foreignKey: "graduation_id",
-
                 },
                 {
                     model: models.Mission,
@@ -80,13 +78,9 @@ module.exports = {
                                     foreignKey: 'manager_id'
                                 }
                             ]
-
-
                         }
                     ]
-
                 },
-
             ]
         }).then((associate) => {
             return res.status(201).json({
@@ -102,6 +96,38 @@ module.exports = {
 
         models.Associate.findOne({
             where: { id: associateId },
+            include: [
+                {
+                    model: models.Graduation,
+                    foreignKey: "graduation_id",
+                },
+                {
+                    model: models.Mission,
+                    foreignKey: "associate_id",
+                    include: [
+                        {
+                            model: models.Project,
+                            foreignKey: "project_id",
+                            // limit: 1,
+                            include: [
+                                {
+                                    model: models.Customer,
+                                    foreignKey: 'customer_id',
+                                    duplicating: false
+                                },
+                                {
+                                    model: models.Associate,
+                                    foreignKey: 'manager_id'
+                                }
+                            ]
+                        },
+                        {
+                            model: models.TJM,
+                            foreignKey: 'mission_id'
+                        }
+                    ]
+                },
+            ]
         })
             .then((associate) => {
                 if (!associate) {
@@ -133,4 +159,45 @@ module.exports = {
                 return res.status(500).json({ error: "unable to fetch customer" });
             });
     },
+    edit: function (req, res) {
+        const associateId = req.params.id;
+
+        models.Associate.findOne({
+            where: { id: associateId },
+        })
+            .then(function (associate) {
+                if (!associate) {
+                    return res.status(404).json({ error: "associate not found" });
+                }
+
+                const name = req.body.name || associate.name;
+                const first_name = req.body.first_name || associate.first_name;
+                const birthdate = req.body.birthdate || associate.birthdate;
+                const telephone = req.body.telephone || associate.telephone;
+                const mail = req.body.mail || associate.mail;
+                const start_date = req.body.start_date || associate.start_date;
+                const end_date = req.body.end_date || associate.end_date;
+
+                return associate.update({
+                    name: name,
+                    first_name: first_name,
+                    birthdate: birthdate,
+                    telephone: telephone,
+                    mail: mail,
+                    start_date: start_date,
+                })
+                    .then(function () {
+                        return res.status(200).json(associate);
+                    })
+                    .catch(function (err) {
+                        console.log(err);
+                        return res.status(500).json({ error: "cannot update associate" });
+                    });
+            })
+            .catch(function (err) {
+                console.log(err);
+                return res.status(500).json({ error: "unable to fetch associate" });
+            });
+    }
+
 };
