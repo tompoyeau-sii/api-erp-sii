@@ -29,24 +29,24 @@ module.exports = (sequelize, DataTypes) => {
       models.Associate.hasMany(models.PRU, {
         foreignKey: 'associate_id'
       })
-      models.Associate.belongsToMany(models.Job, { through: 'Associate_Job' });
+      models.Associate.belongsToMany(models.Job, { through: 'Associate_Job', foreignKey: 'associate_id' });
     }
   }
   Associate.init({
     name: DataTypes.STRING,
     first_name: DataTypes.STRING,
     birthdate: DataTypes.DATEONLY,
-    telephone: DataTypes.STRING,
     mail: DataTypes.STRING,
     graduation_id: DataTypes.INTEGER,
     gender_id: DataTypes.INTEGER,
     start_date: DataTypes.DATEONLY,
     end_date: DataTypes.DATEONLY,
-    tutor_id: DataTypes.INTEGER,
+    isTutor: DataTypes.BOOLEAN,
     isManager: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'Associate',
   });
+  Associate.sync();
   return Associate;
 };

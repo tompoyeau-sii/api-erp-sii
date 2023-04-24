@@ -35,5 +35,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Mission',
   });
+  Mission.sync();
   return Mission;
 };

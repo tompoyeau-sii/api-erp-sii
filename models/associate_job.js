@@ -22,5 +22,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Associate_Job',
   });
+  Associate_Job.sync();
   return Associate_Job;
 };

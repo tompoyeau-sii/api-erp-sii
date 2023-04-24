@@ -1,5 +1,4 @@
 const models = require("../models");
-const graduation = require("../models/graduation");
 
 module.exports = {
     //Creation of an associate
@@ -7,20 +6,27 @@ module.exports = {
         const name = req.body.name;
         const first_name = req.body.first_name;
         const birthdate = req.body.birthdate;
-        const telephone = req.body.telephone;
         const mail = req.body.mail;
         const start_date = req.body.start_date;
+        const graduation_id = req.body.graduation_id;
+        const job_id = req.body.job_id;
+        const gender_id = req.body.gender;
+        const pru = req.body.pru;
+        const isTutor = req.body.isTutor;
+        const isManager = req.body.isManager;
         if (
             name == null
             || first_name == null
             || birthdate == null
-            || telephone == null
             || mail == null
             || start_date == null
+            || graduation_id == null
+            || job_id == null
+            || gender_id == null
+            || pru == null
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
-
         models.Associate.findOne({
             attributes: ["mail"],
             where: { mail: mail },
@@ -28,27 +34,41 @@ module.exports = {
             .then(function (associateFound) {
                 if (!associateFound) {
                     const newAssociate = models.Associate.create({
-                        name: name,
                         first_name: first_name,
+                        name: name,
+                        gender_id: gender_id,
+                        graduation_id: graduation_id,
                         birthdate: birthdate,
-                        telephone: telephone,
                         mail: mail,
                         start_date: start_date,
-                    })
-                        .then(function (newAssociate) {
-                            return res.status(201).json({
-                                associateId: newAssociate.id,
-                            });
+                        isTutor: isTutor,
+                        isManager: isManager,
+                    }).then(function (newAssociate) {
+                        const newAssociateJob = newAssociate.addJob(job_id, { through: { start_date: start_date, end_date: '9999-12-31' } })
+                        const newPRU = models.PRU.create({
+                            associate_id: newAssociate.id,
+                            start_date: start_date,
+                            end_date: '9999-12-31',
+                            value: pru
                         })
                         .catch(function (err) {
                             console.log(err)
-                            return res.status(500).json({ error: "cannot add associate" });
+                            return res.status(500).json({ error: "PRU trouble" });
+                        })
+                        return res.status(201).json({
+                            associateId: newAssociate.id,
                         });
+
+                    }).catch(function (err) {
+                        console.log(err)
+                        return res.status(500).json({ error: "cannot add associate" });
+                    });
                 } else {
                     return res.status(409).json({ error: "associate already exist" });
                 }
             })
             .catch(function (err) {
+                console.log(err)
                 return res.status(500).json({ error: "unable to verify account" });
             });
     },
@@ -58,6 +78,62 @@ module.exports = {
                 {
                     model: models.Graduation,
                     foreignKey: "graduation_id",
+                },
+                {
+                    model: models.PRU,
+                    foreignKey: "associate_id",
+                },
+                {
+                    model: models.Job,
+                    foreignKey: "job_id"                    
+                },
+                {
+                    model: models.Mission,
+                    foreignKey: "associate_id",
+                    include: [
+                        {
+                            model: models.Project,
+                            foreignKey: "project_id",
+                            // limit: 1,
+                            include: [
+                                {
+                                    model: models.Customer,
+                                    foreignKey: 'customer_id',
+                                    duplicating: false
+                                },
+                                {
+                                    model: models.Associate,
+                                    foreignKey: 'manager_id'
+                                }
+                            ]
+                        }
+                    ]
+                },
+            ]
+        }).then((associate) => {
+            return res.status(201).json({
+                associate,
+            });
+        })
+            .catch((error) => console.error(error));
+    },
+    findManager: function (req, res) {
+        models.Associate.findAll({
+            where: {
+                isManager: true
+            },
+            include: [
+                {
+                    model: models.Graduation,
+                    foreignKey: "graduation_id",
+                },
+                {
+                    model: models.PRU,
+                    foreignKey: "associate_id",
+                },
+                {
+                    model: models.Job,
+                    foreignKey: "job_id"                    
                 },
                 {
                     model: models.Mission,
@@ -100,6 +176,14 @@ module.exports = {
                 {
                     model: models.Graduation,
                     foreignKey: "graduation_id",
+                },
+                {
+                    model: models.PRU,
+                    foreignKey: "associate_id",
+                },
+                {
+                    model: models.Job,
+                    foreignKey: "job_id",
                 },
                 {
                     model: models.Mission,
@@ -185,6 +269,7 @@ module.exports = {
                     telephone: telephone,
                     mail: mail,
                     start_date: start_date,
+                    end_date: end_date,
                 })
                     .then(function () {
                         return res.status(200).json(associate);

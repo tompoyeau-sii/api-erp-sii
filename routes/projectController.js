@@ -41,7 +41,14 @@ module.exports = {
             });
     },
     findAll: function (req, res) {
-        models.Project.findAll()
+        models.Project.findAll({
+            include: [
+                {
+                    model: models.Customer,
+                    foreignKey: "customer_id",
+                },
+            ]
+        })
             .then((project) => {
                 return res.status(201).json({
                     project,

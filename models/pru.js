@@ -25,5 +25,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'PRU',
   });
+  PRU.sync();
   return PRU;
 };

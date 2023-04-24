@@ -93,7 +93,7 @@ module.exports = {
             done(null, accountFound);
           })
           .catch(function (err) {
-            return res.status(500).json({ 'error': 'unable to verify account' });
+            return res.status(500).json({ 'error': "Impossible de se connecter. Si le problème persiste, contactez l'administrateur." });
           });
       },
       function (accountFound, done) {
@@ -102,14 +102,14 @@ module.exports = {
             done(null, accountFound, resBycrypt);
           });
         } else {
-          return res.status(404).json({ 'error': 'Compte inexistant' });
+          return res.status(404).json({ 'error': 'Identifiants incorrect'});
         }
       },
       function (accountFound, resBycrypt, done) {
         if (resBycrypt) {
           done(accountFound);
         } else {
-          return res.status(403).json({ 'error': 'Mot de passe incorrect' });
+          return res.status(403).json({ 'error': 'Identifiants incorrect' });
         }
       }
     ], function (accountFound) {

@@ -23,5 +23,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Graduation',
   });
+  Graduation.sync();
   return Graduation;
 };

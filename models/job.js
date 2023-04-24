@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.Job.belongsToMany(models.Associate, { through: 'Associate_Job' });
+      models.Job.belongsToMany(models.Associate, { through: 'Associate_Job', foreignKey: 'job_id' });
     }
   }
   Job.init({
@@ -20,5 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Job',
   });
+  Job.sync();
   return Job;
 };

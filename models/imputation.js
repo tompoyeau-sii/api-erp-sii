@@ -25,5 +25,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Imputation',
   });
+  Imputation.sync();
   return Imputation;
 };

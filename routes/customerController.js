@@ -39,7 +39,19 @@ module.exports = {
 
   findAll: function (req, res) {
     models.Customer.findAll({
-      attributes: ["id", "label"],
+      include: [
+        {
+          model: models.Project,
+          foreignKey: "customer_id",
+          include: [
+            {
+              model: models.Mission,
+              foreignKey: 'project_id',
+              duplicating: false
+            },
+          ]
+        }
+      ]
     })
       .then((customer) => {
         return res.status(201).json({

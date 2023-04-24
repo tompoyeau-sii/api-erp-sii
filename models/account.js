@@ -18,5 +18,6 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Account',
   });
+  Account.sync();
   return Account;
 };
