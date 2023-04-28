@@ -85,7 +85,6 @@ module.exports = {
     const customerLabel = req.params.label;
 
     models.Customer.findOne({
-      attributes: ["id", "label"],
       where: { label: customerLabel },
       include: [
         {
@@ -95,6 +94,10 @@ module.exports = {
           include:
             [
               {
+                model: models.Associate,
+                foreignKey: 'manager_id'
+              },
+              {
                 model: models.Mission,
                 foreignKey: 'project_id',
                 include: [
@@ -103,10 +106,6 @@ module.exports = {
                     foreignKey: 'associate_id'
                   }
                 ]
-              },
-              {
-                model: models.Associate,
-                foreignKey: 'manager_id'
               }
             ]
         }

@@ -43,6 +43,7 @@ exports.router = (function () {
   //project routes
   apiRouter.route("/project").post(projectController.create)
   apiRouter.route("/projects").get(projectController.findAll)
+  apiRouter.route("/projects/:id").get(projectController.findByCustomerId)
 
   //mission routes
   apiRouter.route("/mission").post(missionController.create)

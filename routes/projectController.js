@@ -56,4 +56,28 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
+    findByCustomerId: function (req, res) {
+        const customerId = req.params.id;
+
+        models.Project.findAll({
+            where: { customer_id: customerId },
+            include: [
+                {
+                    model: models.Customer,
+                    foreignKey: "customer_id",
+                }
+            ]
+        })
+            .then((customer) => {
+                if (!customer) {
+                    return res.status(404).json({ error: "proejct for this customer not found" });
+                }
+
+                return res.status(200).json(customer);
+            })
+            .catch((error) => {
+                console.error(error);
+                return res.status(500).json({ error: "unable to fetch customer" });
+            });
+    },
 }
