@@ -36,34 +36,40 @@ module.exports = {
         }).then(function (missionFound) {
             if (!missionFound) {
                 const newMission = models.Mission.create({
-                    label: label,
                     associate_id: associate_id,
                     project_id: project_id,
                     start_date: start_date,
                     end_date: end_date,
-                    tjms: {
+                }).then(function (newMission) {
+                    const newTJM = models.TJM.create({
+                        mission_id: newMission.id,
                         start_date: start_date,
                         end_date: end_date,
                         value: tjm,
-                    },
-                    imputations: {
+                    })
+                    const newImputation = models.Imputation.create({
+                        mission_id: newMission.id,
                         start_date: start_date,
                         end_date: end_date,
                         value: imputation,
-                    }
-                })
-                return res.status(201).json({
-                    missionId: newMission.id,
-                })
-                    .catch(function (err) {
-                        console.log(err)
-                        return res.status(500).json({ error: "cannot add mission" });
-                    });
+                    })
+                        .catch(function (err) {
+                            console.log(err)
+                            return res.status(500).json({ error: "Imputation / TJM error" });
+                        })
+                    return res.status(201).json({
+                        missionId: newMission.id,
+                    })
+                }).catch(function (err) {
+                    console.log(err)
+                    return res.status(500).json({ error: "cannot add mission" });
+                });
             } else {
                 return res.status(409).json({ error: "Une mission pour ce client et ce collaborateur est déjà en cours sur cette période." });
             }
         })
             .catch(function (err) {
+                console.log(err)
                 return res.status(500).json({ error: "unable to verify mission" });
             });
     },

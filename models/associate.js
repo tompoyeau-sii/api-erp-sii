@@ -41,8 +41,6 @@ module.exports = (sequelize, DataTypes) => {
     gender_id: DataTypes.INTEGER,
     start_date: DataTypes.DATEONLY,
     end_date: DataTypes.DATEONLY,
-    isTutor: DataTypes.BOOLEAN,
-    isManager: DataTypes.BOOLEAN
   }, {
     sequelize,
     modelName: 'Associate',

@@ -15,11 +15,11 @@ module.exports = {
     const password = req.body.password;
 
     if (!EMAIL_REGEX.test(username)) {
-      return res.status(400).json({ 'error': "username invalid" });
+      return res.status(400).json({ 'error': "Mail incorrect" });
     }
 
     if (!PASSWORD_REGEX.test(password)) {
-      return res.status(400).json({ 'error': "password invalid" });
+      return res.status(400).json({ 'error': "Mot de passe incorrect" });
     }
     models.Account.findOne({
       attributes: ["username"],
@@ -100,5 +100,17 @@ module.exports = {
         return res.status(500).json({ 'error': 'cannot log on account' });
       }
     });
+  },
+
+  findAll: function (req, res) {
+    models.Account.findAll({
+      attributes: ["id", "username"],
+    })
+      .then((account) => {
+        return res.status(201).json({
+          account,
+        });
+      })
+      .catch((error) => console.error(error));
   },
 };

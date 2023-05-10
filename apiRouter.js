@@ -18,14 +18,16 @@ exports.router = (function () {
   //Customer routes
   apiRouter.route("/customer").post(customerController.create);
   apiRouter.route("/customers").get(customerController.findAll);
-  // apiRouter.route("/customer/:id").get(customerController.findById);
-  apiRouter.route("/customer/:label").get(customerController.findByName);
+  apiRouter.route("/customer/:id").get(customerController.findById);
+  // apiRouter.route("/customer/:label").get(customerController.findByName);
+  apiRouter.route("/customer/update/:id").post(customerController.update);
+  
 
   //Associate routes
   apiRouter.route("/associate").post(associateController.create)
   apiRouter.route("/associates").get(associateController.findAll)
   apiRouter.route("/associate/:id").get(associateController.findById);
-  apiRouter.route("/associate/edit/:id").get(associateController.edit);
+  apiRouter.route("/associate/update/:id").get(associateController.edit);
   apiRouter.route("/associates/managers").get(associateController.findManager);
 
   //Job routes
@@ -43,7 +45,6 @@ exports.router = (function () {
   //project routes
   apiRouter.route("/project").post(projectController.create)
   apiRouter.route("/projects").get(projectController.findAll)
-  apiRouter.route("/projects/:id").get(projectController.findByCustomerId)
 
   //mission routes
   apiRouter.route("/mission").post(missionController.create)

@@ -60,14 +60,35 @@ module.exports = {
       })
       .catch((error) => console.error(error));
   },
-
-  // Récupérer un client par son identifiant
   findById: function (req, res) {
     const customerId = req.params.id;
 
     models.Customer.findOne({
-      attributes: ["id", "label"],
       where: { id: customerId },
+      include: [
+        {
+          model: models.Project,
+          foreignKey: "customer_id",
+          // limit: 1,
+          include:
+            [
+              {
+                model: models.Associate,
+                foreignKey: 'manager_id'
+              },
+              {
+                model: models.Mission,
+                foreignKey: 'project_id',
+                include: [
+                  {
+                    model: models.Associate,
+                    foreignKey: 'associate_id'
+                  }
+                ]
+              }
+            ]
+        }
+      ]
     })
       .then((customer) => {
         if (!customer) {
@@ -81,6 +102,41 @@ module.exports = {
         return res.status(500).json({ error: "unable to fetch customer" });
       });
   },
+
+  update: function (req, res) {
+    const customerId = req.params.id; // ID du customer à modifier
+    const label = req.body.label; // Nouvelle valeur pour le champ "label"
+    if (!customerId || !label) {
+      return res.status(400).json({ error: "missing parameters" });
+    }
+
+    models.Customer.findOne({
+      where: { id: customerId },
+    })
+      .then(function (customerFound) {
+        if (!customerFound) {
+          console.log('error: customer not found');
+          return res.status(404).json({ error: "customer not found" });
+        } else {
+          customerFound.update({ label: label })
+            .then(function (updatedCustomer) {
+              return res.status(200).json({
+                customerId: updatedCustomer.id,
+                label: updatedCustomer.label,
+              });
+            })
+            .catch(function (err) {
+              console.log('error: cannot update customer');
+              return res.status(500).json({ error: "cannot update customer" });
+            });
+        }
+      })
+      .catch(function (err) {
+        console.log('error: unable to verify account');
+        return res.status(500).json({ error: "unable to verify account" });
+      });
+  },
+
   findByName: function (req, res) {
     const customerLabel = req.params.label;
 

@@ -12,8 +12,6 @@ module.exports = {
         const job_id = req.body.job_id;
         const gender_id = req.body.gender;
         const pru = req.body.pru;
-        const isTutor = req.body.isTutor;
-        const isManager = req.body.isManager;
         if (
             name == null
             || first_name == null
@@ -41,8 +39,6 @@ module.exports = {
                         birthdate: birthdate,
                         mail: mail,
                         start_date: start_date,
-                        isTutor: isTutor,
-                        isManager: isManager,
                     }).then(function (newAssociate) {
                         const newAssociateJob = newAssociate.addJob(job_id, { through: { start_date: start_date, end_date: '9999-12-31' } })
                         const newPRU = models.PRU.create({
@@ -117,11 +113,10 @@ module.exports = {
         })
             .catch((error) => console.error(error));
     },
+
     findManager: function (req, res) {
         models.Associate.findAll({
-            where: {
-                isManager: true
-            },
+            
             include: [
                 {
                     model: models.Graduation,
@@ -133,7 +128,10 @@ module.exports = {
                 },
                 {
                     model: models.Job,
-                    foreignKey: "job_id"                    
+                    foreignKey: "job_id", 
+                    where: {
+                        id: 3
+                    },              
                 },
                 {
                     model: models.Mission,
@@ -207,6 +205,10 @@ module.exports = {
                         },
                         {
                             model: models.TJM,
+                            foreignKey: 'mission_id'
+                        },
+                        {
+                            model: models.Imputation,
                             foreignKey: 'mission_id'
                         }
                     ]
