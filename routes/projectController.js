@@ -3,10 +3,12 @@ const models = require("../models");
 module.exports = {
     create: function (req, res) {
         const label = req.body.label;
+        const adv = req.body.adv;
         const customer_id = req.body.customer_id;
         const manager_id = req.body.manager_id;
         if (
             label == null,
+            adv == null,
             customer_id == null,
             manager_id == null
         ) {
@@ -20,6 +22,7 @@ module.exports = {
                 if (!projectFound) {
                     const newProject = models.Project.create({
                         label: label,
+                        adv: adv,
                         customer_id: customer_id,
                         manager_id: manager_id,
                     })

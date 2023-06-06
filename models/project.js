@@ -28,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Project.init({
     customer_id: DataTypes.INTEGER,
+    adv: DataTypes.STRING,
     label: DataTypes.STRING,
     manager_id: DataTypes.INTEGER
   }, {

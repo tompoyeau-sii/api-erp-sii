@@ -47,10 +47,10 @@ module.exports = {
                             end_date: '9999-12-31',
                             value: pru
                         })
-                        .catch(function (err) {
-                            console.log(err)
-                            return res.status(500).json({ error: "PRU trouble" });
-                        })
+                            .catch(function (err) {
+                                console.log(err)
+                                return res.status(500).json({ error: "PRU trouble" });
+                            })
                         return res.status(201).json({
                             associateId: newAssociate.id,
                         });
@@ -81,7 +81,7 @@ module.exports = {
                 },
                 {
                     model: models.Job,
-                    foreignKey: "job_id"                    
+                    foreignKey: "job_id"
                 },
                 {
                     model: models.Mission,
@@ -116,7 +116,7 @@ module.exports = {
 
     findManager: function (req, res) {
         models.Associate.findAll({
-            
+
             include: [
                 {
                     model: models.Graduation,
@@ -128,10 +128,10 @@ module.exports = {
                 },
                 {
                     model: models.Job,
-                    foreignKey: "job_id", 
+                    foreignKey: "job_id",
                     where: {
                         id: 3
-                    },              
+                    },
                 },
                 {
                     model: models.Mission,
@@ -245,7 +245,7 @@ module.exports = {
                 return res.status(500).json({ error: "unable to fetch customer" });
             });
     },
-    edit: function (req, res) {
+    update: function (req, res) {
         const associateId = req.params.id;
 
         models.Associate.findOne({
@@ -255,7 +255,6 @@ module.exports = {
                 if (!associate) {
                     return res.status(404).json({ error: "associate not found" });
                 }
-
                 const name = req.body.name || associate.name;
                 const first_name = req.body.first_name || associate.first_name;
                 const birthdate = req.body.birthdate || associate.birthdate;
@@ -263,7 +262,19 @@ module.exports = {
                 const mail = req.body.mail || associate.mail;
                 const start_date = req.body.start_date || associate.start_date;
                 const end_date = req.body.end_date || associate.end_date;
-
+                if (
+                    name == null
+                    || first_name == null
+                    || birthdate == null
+                    || mail == null
+                    || start_date == null
+                    || graduation_id == null
+                    || job_id == null
+                    || gender_id == null
+                    || pru == null
+                ) {
+                    return res.status(400).json({ error: "Paramètres manquants" });
+                }
                 return associate.update({
                     name: name,
                     first_name: first_name,
