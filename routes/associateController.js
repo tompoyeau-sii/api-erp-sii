@@ -1,5 +1,16 @@
 const models = require("../models");
 
+// Créer une nouvelle instance de l'objet Date
+var date = new Date();
+
+// Obtenir les composants de la date
+var annee = date.getFullYear(); // Année à 4 chiffres
+var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
+var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
+
+// Concaténer les composants dans le format souhaité
+var today = annee + '-' + mois + '-' + jour;
+
 module.exports = {
     //Creation of an associate
     create: function (req, res) {
@@ -81,7 +92,7 @@ module.exports = {
                 },
                 {
                     model: models.Job,
-                    foreignKey: "job_id"
+                    foreignKey: "job_id",
                 },
                 {
                     model: models.Mission,
@@ -95,7 +106,6 @@ module.exports = {
                                 {
                                     model: models.Customer,
                                     foreignKey: 'customer_id',
-                                    duplicating: false
                                 },
                                 {
                                     model: models.Associate,
@@ -258,9 +268,12 @@ module.exports = {
                 const name = req.body.name || associate.name;
                 const first_name = req.body.first_name || associate.first_name;
                 const birthdate = req.body.birthdate || associate.birthdate;
-                const telephone = req.body.telephone || associate.telephone;
-                const mail = req.body.mail || associate.mail;
+                const gender_id = req.body.gender || associate.gender_id;
+                const graduation_id = req.body.graduation || associate.graduation_id;
+                const job_id = req.body.job_id
                 const start_date = req.body.start_date || associate.start_date;
+                const pru = req.body.pru;
+                const mail = req.body.mail || associate.mail;
                 const end_date = req.body.end_date || associate.end_date;
                 if (
                     name == null
@@ -279,12 +292,57 @@ module.exports = {
                     name: name,
                     first_name: first_name,
                     birthdate: birthdate,
-                    telephone: telephone,
                     mail: mail,
+                    graduation_id: graduation_id,
+                    job_id: job_id,
                     start_date: start_date,
                     end_date: end_date,
                 })
-                    .then(function () {
+                    .then(function (updateAssociate) {
+                        //on récupére le dernier job
+                        models.Associate_Job.findOne({
+                            where: { associate_id: updateAssociate.id },
+                            order: [
+                                ['createdAt', 'DESC'],
+                            ],
+                            limit: 1,
+                        }).then(function (lastJob) {
+                            //on vérifie qu'il y en a bien un sinon on en créer un
+                            if (lastJob != null) {
+                                // On vérifie que le job est bien différent du précédant
+                                if (lastJob.job_id != job_id) {
+                                    // On change la date de fin du précédent par celle aujourd'hui
+                                    lastJob.update({ end_date: today })
+                                    // On créer la nouvelle association entre un job et un collab
+                                    updateAssociate.addJob(job_id, { through: { start_date: today, end_date: '9999-12-31' } })
+                                }
+                            } else {
+                                updateAssociate.addJob(job_id, { through: { start_date: today, end_date: '9999-12-31' } })
+                            }
+                        })
+
+                        // on récupére le dernier PRU créer pour ce collaborateur
+                        models.PRU.findOne({
+                            where: { associate_id: updateAssociate.id },
+                            order: [
+                                ['createdAt', 'DESC'],
+                            ],
+                            limit: 1,
+                        }).then(function (lastPru) {
+                            //on vérifie bien que la valeur du pru est différente
+                            console.log(lastPru)
+                            if (lastPru != null && lastPru.value != pru) {
+                                //on modifie la date de fin du précédent PRU en mettant la date du jour comme fin
+                                lastPru.update({ end_date: today });
+                                //on créer un nouveau PRU avec les nouvelles valeurs commençant à la date du jour
+                                models.PRU.create({
+                                    associate_id: updateAssociate.id,
+                                    start_date: today,
+                                    end_date: '9999-12-31',
+                                    value: pru
+                                })
+                            }
+                        })
                         return res.status(200).json(associate);
                     })
                     .catch(function (err) {
