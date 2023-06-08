@@ -16,8 +16,8 @@ module.exports = (sequelize, DataTypes) => {
   Associate_Job.init({
     associate_id: DataTypes.INTEGER,
     job_id: DataTypes.INTEGER,
-    start_date: DataTypes.DATEONLY,
-    end_date: DataTypes.DATEONLY
+    start_date: DataTypes.DATE,
+    end_date: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'Associate_Job',

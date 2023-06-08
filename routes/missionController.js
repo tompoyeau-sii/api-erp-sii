@@ -3,6 +3,7 @@ const { Op } = require("sequelize");
 
 module.exports = {
     create: function (req, res) {
+        const label = req.body.label;
         const associate_id = req.body.associate_id;
         const project_id = req.body.project_id;
         const start_date = req.body.start_date;

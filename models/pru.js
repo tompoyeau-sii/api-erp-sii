@@ -18,8 +18,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   PRU.init({
     associate_id: DataTypes.INTEGER,
-    start_date: DataTypes.DATEONLY,
-    end_date: DataTypes.DATEONLY,
+    start_date: DataTypes.DATE,
+    end_date: DataTypes.DATE,
     value: DataTypes.FLOAT
   }, {
     sequelize,
