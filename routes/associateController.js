@@ -1,5 +1,5 @@
 const models = require("../models");
-
+const { Op } = require("sequelize");
 
 function today() {
     var date = new Date();
@@ -97,6 +97,9 @@ module.exports = {
     },
     findAll: function (req, res) {
         models.Associate.findAll({
+            order: [
+                ['name', 'ASC']
+            ],
             include: [
                 {
                     model: models.Graduation,
@@ -141,42 +144,18 @@ module.exports = {
     },
 
     findManager: function (req, res) {
-        models.Associate.findAll({
-
+        models.Associate_Job.findAll({
+            where: {
+                end_date: {
+                    [Op.gt]: today()
+                },
+                job_id: 3,
+            }, 
             include: [
                 {
-                    model: models.Graduation,
-                    foreignKey: "graduation_id",
-                },
-                {
-                    model: models.PRU,
+                    model: models.Associate,
                     foreignKey: "associate_id",
-                },
-                {
-                    model: models.Job,
-                    foreignKey: "job_id",
-                },
-                {
-                    model: models.Mission,
-                    foreignKey: "associate_id",
-                    include: [
-                        {
-                            model: models.Project,
-                            foreignKey: "project_id",
-                            // limit: 1,
-                            include: [
-                                {
-                                    model: models.Customer,
-                                    foreignKey: 'customer_id',
-                                    duplicating: false
-                                },
-                                {
-                                    model: models.Associate,
-                                    foreignKey: 'manager_id'
-                                }
-                            ]
-                        }
-                    ]
+                    where: { id: 3 },
                 },
             ]
         }).then((associate) => {
