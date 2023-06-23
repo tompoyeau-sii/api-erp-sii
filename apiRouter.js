@@ -29,6 +29,7 @@ exports.router = (function () {
   apiRouter.route("/associate/:id").get(associateController.findById);
   apiRouter.route("/associate/update/:id").post(associateController.update);
   apiRouter.route("/associates/managers").get(associateController.findManager);
+  apiRouter.route("/associates/pdc").get(associateController.pdc);
 
   //Job routes
   apiRouter.route("/job").post(jobController.create)

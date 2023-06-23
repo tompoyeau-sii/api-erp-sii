@@ -50,6 +50,32 @@ module.exports = {
                     model: models.Customer,
                     foreignKey: "customer_id",
                 },
+                {
+                    model: models.Mission,
+                    foreignKey: "project_id",
+                    include: [
+                        {
+                            model: models.TJM,
+                            foreignKey: 'mission_id'
+                        },
+                        {
+                            model: models.Associate,
+                            foreignKey: 'associate_id',
+                            include: {
+                                model: models.PRU,
+                                foreignKey: 'associate_id'
+                            }
+                        }
+                    ]
+                },
+                {
+                    model: models.Associate,
+                    foreignKey: "manager_id",
+                    include: {
+                        model: models.PRU,
+                        foreignKey: 'associate_id',
+                    }
+                },
             ]
         })
             .then((project) => {

@@ -34,7 +34,7 @@ module.exports = {
         const first_name = req.body.first_name;
         const birthdate = req.body.birthdate;
         const mail = req.body.mail;
-        const start_date = req.body.start_date + hour();
+        const start_date = req.body.start_date;
         const graduation_id = req.body.graduation_id;
         const job_id = req.body.job_id;
         const gender_id = req.body.gender;
@@ -52,6 +52,7 @@ module.exports = {
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
+        console.log(start_date)
         models.Associate.findOne({
             attributes: ["mail"],
             where: { mail: mail },
@@ -95,32 +96,88 @@ module.exports = {
                 return res.status(500).json({ error: "unable to verify account" });
             });
     },
+
     findAll: function (req, res) {
+        const page = req.query.page || 1; // Récupère le numéro de la page depuis la requête (par défaut : 1)
+        const limit = 10; // Nombre d'éléments par page
+        const offset = (page - 1) * limit; // Calcul de l'offset en fonction de la page actuelle
+        models.Associate.count().then((nbAssociates) => {
+            models.Associate.findAndCountAll({
+                order: [['name', 'ASC']],
+                include: [
+                    {
+                        model: models.Graduation,
+                        foreignKey: 'graduation_id',
+                    },
+                    {
+                        model: models.PRU,
+                        foreignKey: 'associate_id',
+                    },
+                    {
+                        model: models.Job,
+                        foreignKey: 'job_id',
+                    },
+                    {
+                        model: models.Mission,
+                        foreignKey: 'associate_id',
+                        include: [
+                            {
+                                model: models.Project,
+                                foreignKey: 'project_id',
+                                include: [
+                                    {
+                                        model: models.Customer,
+                                        foreignKey: 'customer_id',
+                                    },
+                                    {
+                                        model: models.Associate,
+                                        foreignKey: 'manager_id',
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+                limit,
+                offset,
+            })
+                .then((result) => {
+                    const { count, rows } = result;
+
+                    const totalPages = Math.ceil(nbAssociates / limit);
+                    console.log(totalPages)
+
+                    return res.status(201).json({
+                        associate: rows,
+                        totalPages,
+                    });
+                })
+                .catch((error) => console.error(error));
+        })
+    },
+    pdc: function (req, res) {
         models.Associate.findAll({
-            order: [
-                ['name', 'ASC']
-            ],
+            order: [['name', 'ASC']],
             include: [
                 {
                     model: models.Graduation,
-                    foreignKey: "graduation_id",
+                    foreignKey: 'graduation_id',
                 },
                 {
                     model: models.PRU,
-                    foreignKey: "associate_id",
+                    foreignKey: 'associate_id',
                 },
                 {
                     model: models.Job,
-                    foreignKey: "job_id",
+                    foreignKey: 'job_id',
                 },
                 {
                     model: models.Mission,
-                    foreignKey: "associate_id",
+                    foreignKey: 'associate_id',
                     include: [
                         {
                             model: models.Project,
-                            foreignKey: "project_id",
-                            // limit: 1,
+                            foreignKey: 'project_id',
                             include: [
                                 {
                                     model: models.Customer,
@@ -128,36 +185,64 @@ module.exports = {
                                 },
                                 {
                                     model: models.Associate,
-                                    foreignKey: 'manager_id'
-                                }
-                            ]
-                        }
-                    ]
+                                    foreignKey: 'manager_id',
+                                },
+                            ],
+                        },
+                    ],
                 },
-            ]
-        }).then((associate) => {
-            return res.status(201).json({
-                associate,
-            });
+            ],
         })
+            .then((associate) => {
+
+                return res.status(201).json({
+                    associate,
+                });
+            })
             .catch((error) => console.error(error));
     },
 
     findManager: function (req, res) {
-        models.Associate_Job.findAll({
-            where: {
-                end_date: {
-                    [Op.gt]: today()
-                },
-                job_id: 3,
-            }, 
-            include: [
-                {
-                    model: models.Associate,
-                    foreignKey: "associate_id",
-                    where: { id: 3 },
-                },
-            ]
+        models.Job.findAll({
+            where: { id: 3 },
+            include:
+            {
+                model: models.Associate,
+                include:
+                    [
+                        {
+                            model: models.PRU,
+                            foreignKey: 'associate_id'
+                        },
+                        {
+                            model: models.Project,
+                            foreignKey: "associate_id",
+                            include:
+                            {
+                                model: models.Mission,
+                                foreignKey: 'project_id',
+                                include: [
+                                    {
+                                        model: models.Associate,
+                                        foreignKey: 'associate_id',
+                                        include: {
+                                            model: models.PRU,
+                                            foreignKey: 'associate_id'
+                                        }
+                                    },
+                                    {
+                                        model: models.TJM,
+                                        foreignKey: 'mission_id'
+                                    },
+                                    {
+                                        model: models.Imputation,
+                                        foreignKey: 'mission_id'
+                                    },
+                                ]
+                            }
+                        },
+                    ]
+            }
         }).then((associate) => {
             return res.status(201).json({
                 associate,
@@ -315,7 +400,7 @@ module.exports = {
                         models.PRU.findOne({
                             where: { associate_id: updateAssociate.id },
                             order: [
-                                ['createdAt', 'DESC'],
+                                ['updatedAt', 'DESC'],
                             ],
                             limit: 1,
                         }).then(function (lastPru) {
