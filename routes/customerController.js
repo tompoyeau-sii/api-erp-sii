@@ -24,8 +24,8 @@ module.exports = {
   create: function (req, res) {
     const label = req.body.label;
 
-    if (label == null) {
-      return res.status(400).json({ error: "missing parameters" });
+    if (label == null || label == "") {
+      return res.status(400).json({ error: "Paramètre manquant" });
     }
 
     models.Customer.findOne({
@@ -39,20 +39,20 @@ module.exports = {
           })
             .then(function (newCustomer) {
               return res.status(201).json({
-                customerId: newCustomer.id,
+                success: "Nouveau client créé.",
               });
             })
             .catch(function (err) {
               console.log('error: cannot add customer');
-              return res.status(500).json({ error: "cannot add customer" });
+              return res.status(500).json({ error: "Ce client existe déjà" });
             });
         } else {
           console.log('error: customer already exist');
-          return res.status(409).json({ error: "customer already exist" });
+          return res.status(409).json({ error: "Ce client existe déjà" });
         }
       })
       .catch(function (err) {
-        return res.status(500).json({ error: "unable to verify account" });
+        return res.status(500).json({ error: "Problème imprévu, si il persiste, prévenez le technicien" });
       });
   },
 
@@ -81,6 +81,37 @@ module.exports = {
                   }
                 ]
               },
+              include: [
+                {
+                  model: models.Imputation,
+                  foreignKey: "mission_id"
+                },
+                {
+                  model: models.TJM,
+                  foreignKey: "mission_id"
+                },
+                {
+                  model: models.Project,
+                  foreignKey: "project_id",
+                  include: {
+                    model: models.Associate,
+                    foreignKey: 'manager_id',
+                    include: {
+                      model: models.PRU,
+                      foreignKey: 'associate_id'
+                    }
+
+                  }
+                },
+                {
+                  model: models.Associate,
+                  foreignKey: "associate_id",
+                  include: {
+                    model: models.PRU,
+                    foreignKey: 'associate_id'
+                  }
+                }
+              ],
               group: 'associate_id'
             }
           ]

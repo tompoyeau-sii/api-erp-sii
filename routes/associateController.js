@@ -1,5 +1,4 @@
 const models = require("../models");
-const { Op } = require("sequelize");
 
 function today() {
     var date = new Date();
@@ -97,7 +96,7 @@ module.exports = {
             });
     },
 
-    findAll: function (req, res) {
+    findAllWithLimit: function (req, res) {
         const page = req.query.page || 1; // Récupère le numéro de la page depuis la requête (par défaut : 1)
         const limit = 10; // Nombre d'éléments par page
         const offset = (page - 1) * limit; // Calcul de l'offset en fonction de la page actuelle
@@ -155,7 +154,7 @@ module.exports = {
                 .catch((error) => console.error(error));
         })
     },
-    pdc: function (req, res) {
+    findAll: function (req, res) {
         models.Associate.findAll({
             order: [['name', 'ASC']],
             include: [
@@ -201,7 +200,6 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
-
     findManager: function (req, res) {
         models.Job.findAll({
             where: { id: 3 },
@@ -250,7 +248,6 @@ module.exports = {
         })
             .catch((error) => console.error(error));
     },
-
     // Récupérer un client par son identifiant
     findById: function (req, res) {
         const associateId = req.params.id;
@@ -386,10 +383,16 @@ module.exports = {
                             if (lastJob != null) {
                                 // On vérifie que le job est bien différent du précédant
                                 if (lastJob.job_id != job_id) {
-                                    // On change la date de fin du précédent par celle aujourd'hui
-                                    lastJob.update({ end_date: today() })
-                                    // On créer la nouvelle association entre un job et un collab
-                                    updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
+                                    //On vérifie que le collaborateur à commencé à travailler
+                                    if(updateAssociate.start_date < today()) {
+                                        // On change la date de fin du précédent par celle aujourd'hui
+                                        lastJob.update({ end_date: today() })
+                                        // On créer la nouvelle association entre un job et un collab
+                                        updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
+                                    } else {
+                                        lastJob.destroy()
+                                        updateAssociate.addJob(job_id, { through: { start_date: updateAssociate.start_date, end_date: '9999-12-31 23:59:59' } })
+                                    }
                                 }
                             } else {
                                 updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
@@ -406,15 +409,25 @@ module.exports = {
                         }).then(function (lastPru) {
                             //on vérifie bien que la valeur du pru est différente
                             if (lastPru != null && lastPru.value != pru) {
-                                //on modifie la date de fin du précédent PRU en mettant la date du jour comme fin
-                                lastPru.update({ end_date: today() });
-                                //on créer un nouveau PRU avec les nouvelles valeurs commençant à la date du jour
-                                models.PRU.create({
-                                    associate_id: updateAssociate.id,
-                                    start_date: today(),
-                                    end_date: '9999-12-31',
-                                    value: pru
-                                })
+                                if (updateAssociate.start_date < today()) { 
+                                    //on modifie la date de fin du précédent PRU en mettant la date du jour comme fin
+                                    lastPru.update({ end_date: today() });
+                                    //on créer un nouveau PRU avec les nouvelles valeurs commençant à la date du jour
+                                    models.PRU.create({
+                                        associate_id: updateAssociate.id,
+                                        start_date: today(),
+                                        end_date: '9999-12-31',
+                                        value: pru
+                                    })
+                                } else {
+                                    lastPru.destroy();
+                                    models.PRU.create({
+                                        associate_id: updateAssociate.id,
+                                        start_date: updateAssociate.start_date,
+                                        end_date: '9999-12-31',
+                                        value: pru
+                                    })
+                                }
                             }
                         })
                         return res.status(200).json(associate);

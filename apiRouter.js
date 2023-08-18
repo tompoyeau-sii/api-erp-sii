@@ -25,32 +25,33 @@ exports.router = (function () {
 
   //Associate routes
   apiRouter.route("/associate").post(associateController.create)
-  apiRouter.route("/associates").get(associateController.findAll)
+  apiRouter.route("/associates").get(associateController.findAllWithLimit)
   apiRouter.route("/associate/:id").get(associateController.findById);
   apiRouter.route("/associate/update/:id").post(associateController.update);
   apiRouter.route("/associates/managers").get(associateController.findManager);
-  apiRouter.route("/associates/pdc").get(associateController.pdc);
-
+  apiRouter.route("/associates/pdc").get(associateController.findAll);
+  
   //Job routes
   apiRouter.route("/job").post(jobController.create)
   apiRouter.route("/jobs").get(jobController.findAll)
-
+  
   //Gender routes
   apiRouter.route("/gender").post(genderController.create)
   apiRouter.route("/genders").get(genderController.findAll)
-
+  
   //graduation routes
   apiRouter.route("/graduation").post(graduationController.create)
   apiRouter.route("/graduations").get(graduationController.findAll)
-
+  
   //project routes
   apiRouter.route("/project").post(projectController.create)
   apiRouter.route("/projects").get(projectController.findAll)
-
+  
   //mission routes
   apiRouter.route("/mission").post(missionController.create)
+  apiRouter.route("/mission/update/:id").post(missionController.update);
   apiRouter.route("/missions").get(missionController.findAll)
-
+  apiRouter.route("/missions/ongoing").get(missionController.findAllOngoing)
 
   return apiRouter;
 })();
