@@ -259,7 +259,6 @@ module.exports = {
             return res.status(500).json({ error: "Problème lors de la recherche de la mission existante" });
         });
     },
-
     findAll: function (req, res) {
         models.Mission.findAll({
             include: [
@@ -274,23 +273,23 @@ module.exports = {
                 {
                     model: models.Project,
                     foreignKey: "project_id",
-                    include: {
-                        model: models.Associate,
-                        foreignKey: 'manager_id',
-                        include: {
-                            model: models.PRU,
-                            foreignKey: 'associate_id'
-                        }
-
-                    }
                 },
                 {
                     model: models.Associate,
                     foreignKey: "associate_id",
-                    include: {
-                        model: models.PRU,
-                        foreignKey: 'associate_id'
-                    }
+                    include: [
+                        {
+                            model: models.PRU,
+                            foreignKey: 'associate_id'
+                        },
+                        {
+                            model: models.Associate, // Utilisez le modèle Associate ici
+                            as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                            through: {
+                                attributes: ['start_date', 'end_date'] // Incluez les colonnes de la table de liaison
+                            }
+                        },
+                    ]
                 }
             ],
         })
@@ -329,23 +328,20 @@ module.exports = {
                 {
                     model: models.Project,
                     foreignKey: "project_id",
-                    include: {
-                        model: models.Associate,
-                        foreignKey: 'manager_id',
-                        include: {
-                            model: models.PRU,
-                            foreignKey: 'associate_id'
-                        }
-
-                    }
                 },
                 {
                     model: models.Associate,
                     foreignKey: "associate_id",
-                    include: {
-                        model: models.PRU,
-                        foreignKey: 'associate_id'
-                    }
+                    include: [
+                        {
+                            model: models.PRU,
+                            foreignKey: 'associate_id'
+                        },
+                        {
+                            model: models.associatemanager,
+                            foreignKey: 'associate_id'
+                        },
+                    ]
                 }
             ],
         })

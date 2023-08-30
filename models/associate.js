@@ -22,14 +22,19 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'associate_id'
       })
 
-      models.Associate.hasMany(models.Project, {
-        foreignKey: 'manager_id'
-      })
-
       models.Associate.hasMany(models.PRU, {
         foreignKey: 'associate_id'
       })
+
       models.Associate.belongsToMany(models.Job, { through: 'Associate_Job', foreignKey: 'associate_id' });
+
+      // Ajoutez la relation Many-to-Many auto-associée pour les managers
+      models.Associate.belongsToMany(models.Associate, {
+        as: 'managers',            // Nom de la relation pour récupérer les managers
+        through: 'Associate_Manager', // Nom de la table de liaison
+        foreignKey: 'associate_id',   // Clé étrangère de cet associé dans la table de liaison
+        otherKey: 'manager_id',       // Clé étrangère de l'autre associé (manager)
+      });
     }
   }
   Associate.init({

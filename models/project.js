@@ -16,9 +16,6 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "customer_id",
       })
 
-      models.Project.belongsTo(models.Associate, {
-        foreignKey: 'manager_id'
-      })
 
       models.Project.hasMany(models.Mission, {
         foreignKey: 'project_id'
@@ -30,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
     customer_id: DataTypes.INTEGER,
     adv: DataTypes.STRING,
     label: DataTypes.STRING,
-    manager_id: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Project',

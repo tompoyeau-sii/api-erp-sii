@@ -93,15 +93,6 @@ module.exports = {
                 {
                   model: models.Project,
                   foreignKey: "project_id",
-                  include: {
-                    model: models.Associate,
-                    foreignKey: 'manager_id',
-                    include: {
-                      model: models.PRU,
-                      foreignKey: 'associate_id'
-                    }
-
-                  }
                 },
                 {
                   model: models.Associate,
@@ -138,18 +129,31 @@ module.exports = {
           include:
             [
               {
-                model: models.Associate,
-                foreignKey: 'manager_id'
-              },
-              {
                 model: models.Mission,
                 foreignKey: 'project_id',
                 include: [
                   {
+                    model: models.Imputation,
+                    foreignKey: "mission_id"
+                  },
+                  {
+                    model: models.TJM,
+                    foreignKey: "mission_id"
+                  },
+                  {
+                    model: models.Project,
+                    foreignKey: "project_id",
+                  },
+                  {
                     model: models.Associate,
-                    foreignKey: 'associate_id'
+                    foreignKey: "associate_id",
+                    include: {
+                      model: models.PRU,
+                      foreignKey: 'associate_id'
+                    }
                   }
-                ]
+                ],
+                group: 'associate_id'
               }
             ]
         }
@@ -215,18 +219,8 @@ module.exports = {
           include:
             [
               {
-                model: models.Associate,
-                foreignKey: 'manager_id'
-              },
-              {
                 model: models.Mission,
                 foreignKey: 'project_id',
-                include: [
-                  {
-                    model: models.Associate,
-                    foreignKey: 'associate_id'
-                  }
-                ]
               }
             ]
         }

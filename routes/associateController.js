@@ -1,4 +1,5 @@
 const models = require("../models");
+const { Op } = require("sequelize");
 
 function today() {
     var date = new Date();
@@ -25,7 +26,6 @@ function hour() {
     return heuresActuel = heures + ':' + minutes + ':' + secondes;
 }
 
-
 module.exports = {
     //Creation of an associate
     create: function (req, res) {
@@ -38,64 +38,80 @@ module.exports = {
         const job_id = req.body.job_id;
         const gender_id = req.body.gender;
         const pru = req.body.pru;
+        const manager_id = req.body.manager_id;
+
         if (
-            name == null
-            || first_name == null
-            || birthdate == null
-            || mail == null
-            || start_date == null
-            || graduation_id == null
-            || job_id == null
-            || gender_id == null
-            || pru == null
+            name == null ||
+            first_name == null ||
+            birthdate == null ||
+            mail == null ||
+            start_date == null ||
+            graduation_id == null ||
+            job_id == null ||
+            gender_id == null ||
+            pru == null ||
+            manager_id == null
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
-        console.log(start_date)
+
         models.Associate.findOne({
             attributes: ["mail"],
             where: { mail: mail },
         })
-            .then(function (associateFound) {
+            .then(async function (associateFound) {
                 if (!associateFound) {
-                    const newAssociate = models.Associate.create({
-                        first_name: first_name,
-                        name: name,
-                        gender_id: gender_id,
-                        graduation_id: graduation_id,
-                        birthdate: birthdate,
-                        mail: mail,
-                        start_date: start_date,
-                    }).then(function (newAssociate) {
-                        const newAssociateJob = newAssociate.addJob(job_id, { through: { start_date: start_date, end_date: '9999-12-31 23:59:59' } })
-                        const newPRU = models.PRU.create({
+                    try {
+                        const newAssociate = await models.Associate.create({
+                            first_name: first_name,
+                            name: name,
+                            gender_id: gender_id,
+                            graduation_id: graduation_id,
+                            birthdate: birthdate,
+                            mail: mail,
+                            start_date: start_date,
+                        });
+
+                        // Ajoutez le job avec les dates
+                        await newAssociate.addJob(job_id, {
+                            through: {
+                                start_date: start_date,
+                                end_date: '9999-12-31 23:59:59',
+                            },
+                        });
+
+                        // Créez un PRU
+                        await models.PRU.create({
                             associate_id: newAssociate.id,
                             start_date: start_date,
                             end_date: '9999-12-31',
-                            value: pru
-                        })
-                            .catch(function (err) {
-                                console.log(err)
-                                return res.status(500).json({ error: "PRU trouble" });
-                            })
+                            value: pru,
+                        });
+
+                        // Ajoutez le manager avec les dates
+                        await newAssociate.addManagers(manager_id, {
+                            through: {
+                                start_date: start_date,
+                                end_date: '9999-12-31 23:59:59',
+                            },
+                        });
+
                         return res.status(201).json({
                             associateId: newAssociate.id,
                         });
-
-                    }).catch(function (err) {
-                        console.log(err)
-                        return res.status(500).json({ error: "cannot add associate" });
-                    });
+                    } catch (error) {
+                        console.log(error);
+                        return res.status(500).json({ error: "Erreur lors de la création de l'associé" });
+                    }
                 } else {
-                    return res.status(409).json({ error: "associate already exist" });
+                    return res.status(409).json({ error: "L'associé existe déjà" });
                 }
             })
             .catch(function (err) {
-                console.log(err)
-                return res.status(500).json({ error: "unable to verify account" });
+                console.log(err);
+                return res.status(500).json({ error: "Impossible de vérifier le compte" });
             });
     },
-
     findAllWithLimit: function (req, res) {
         const page = req.query.page || 1; // Récupère le numéro de la page depuis la requête (par défaut : 1)
         const limit = 10; // Nombre d'éléments par page
@@ -107,14 +123,51 @@ module.exports = {
                     {
                         model: models.Graduation,
                         foreignKey: 'graduation_id',
+                        attributes: ['label'],
                     },
                     {
                         model: models.PRU,
                         foreignKey: 'associate_id',
+                        where: {
+                            [Op.and]: [
+                                {
+                                    start_date: {
+                                        [Op.lt]: today()
+                                    }
+                                },
+                                {
+                                    end_date: {
+                                        [Op.gt]: today()
+                                    }
+                                }
+                            ]
+                        },
+                    },
+                    {
+                        model: models.Associate, // Utilisez le modèle Associate ici
+                        as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                        through: {
+                            where: {
+                                [Op.and]: [
+                                    {
+                                        start_date: {
+                                            [Op.lt]: today()
+                                        }
+                                    },
+                                    {
+                                        end_date: {
+                                            [Op.gt]: today()
+                                        }
+                                    }
+                                ]
+                            },
+                            attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                        },
                     },
                     {
                         model: models.Job,
                         foreignKey: 'job_id',
+                        attributes: ['label'],
                     },
                     {
                         model: models.Mission,
@@ -127,10 +180,6 @@ module.exports = {
                                     {
                                         model: models.Customer,
                                         foreignKey: 'customer_id',
-                                    },
-                                    {
-                                        model: models.Associate,
-                                        foreignKey: 'manager_id',
                                     },
                                 ],
                             },
@@ -161,14 +210,51 @@ module.exports = {
                 {
                     model: models.Graduation,
                     foreignKey: 'graduation_id',
+                    attributes: ['label'],
                 },
                 {
                     model: models.PRU,
                     foreignKey: 'associate_id',
+                    where: {
+                        [Op.and]: [
+                            {
+                                start_date: {
+                                    [Op.lt]: today()
+                                }
+                            },
+                            {
+                                end_date: {
+                                    [Op.gt]: today()
+                                }
+                            }
+                        ]
+                    },
+                },
+                {
+                    model: models.Associate, // Utilisez le modèle Associate ici
+                    as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                    through: {
+                        where: {
+                            [Op.and]: [
+                                {
+                                    start_date: {
+                                        [Op.lt]: today()
+                                    }
+                                },
+                                {
+                                    end_date: {
+                                        [Op.gt]: today()
+                                    }
+                                }
+                            ]
+                        },
+                        attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                    },
                 },
                 {
                     model: models.Job,
                     foreignKey: 'job_id',
+                    attributes: ['label'],
                 },
                 {
                     model: models.Mission,
@@ -181,10 +267,6 @@ module.exports = {
                                 {
                                     model: models.Customer,
                                     foreignKey: 'customer_id',
-                                },
-                                {
-                                    model: models.Associate,
-                                    foreignKey: 'manager_id',
                                 },
                             ],
                         },
@@ -200,54 +282,103 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
+    // findManager: function (req, res) {
+    //     models.Job.findAll({
+    //         where: { id: 3 },
+    //         include:
+    //         {
+    //             model: models.Associate,
+    //             include:
+    //                 [
+    //                     {
+    //                         model: models.PRU,
+    //                         foreignKey: 'associate_id'
+    //                     },
+    //                     {
+    //                         model: models.Associate,
+    //                         as: 'managers',
+    //                         foreignKey: 'manager_id',
+    //                     },
+    //                     {
+    //                         model: models.Mission,
+    //                         foreignKey: 'project_id',
+    //                         include: [
+    //                             {
+    //                                 model: models.Associate,
+    //                                 foreignKey: 'associate_id',
+    //                                 include: {
+    //                                     model: models.PRU,
+    //                                     foreignKey: 'associate_id'
+    //                                 }
+    //                             },
+    //                             {
+    //                                 model: models.TJM,
+    //                                 foreignKey: 'mission_id'
+    //                             },
+    //                             {
+    //                                 model: models.Imputation,
+    //                                 foreignKey: 'mission_id'
+    //                             },
+    //                         ]
+    //                     }
+    //                 ]
+    //         }
+    //     }).then((associate) => {
+    //         return res.status(201).json({
+    //             associate,
+    //         });
+    //     })
+    //         .catch((error) => console.error(error));
+    // },
+    
+    // findManager: function (req, res) {
+    //     models.Job.findAll({
+    //         where: { label: "Manager" },
+    //         include:
+    //         {
+    //             model: models.Associate,
+    //             include: [
+    //                 {
+    //                     model: models.Associate,
+    //                     as: 'associate',
+    //                     foreignKey: 'associate_id',
+    //                 },
+    //                 {
+    //                     model: models.PRU,
+    //                     foreignKey: 'associate_id',
+    //                 }
+    //             ]
+    //         }
+    //     }).then((associate) => {
+    //         return res.status(200).json({
+    //             associate,
+    //         });
+    //     }).catch((error) => {
+    //         console.error(error);
+    //         return res.status(500).json({ error: "Error while fetching managers" });
+    //     });
+    // },
     findManager: function (req, res) {
-        models.Job.findAll({
-            where: { id: 3 },
-            include:
-            {
-                model: models.Associate,
-                include:
-                    [
-                        {
-                            model: models.PRU,
-                            foreignKey: 'associate_id'
-                        },
-                        {
-                            model: models.Project,
-                            foreignKey: "associate_id",
-                            include:
-                            {
-                                model: models.Mission,
-                                foreignKey: 'project_id',
-                                include: [
-                                    {
-                                        model: models.Associate,
-                                        foreignKey: 'associate_id',
-                                        include: {
-                                            model: models.PRU,
-                                            foreignKey: 'associate_id'
-                                        }
-                                    },
-                                    {
-                                        model: models.TJM,
-                                        foreignKey: 'mission_id'
-                                    },
-                                    {
-                                        model: models.Imputation,
-                                        foreignKey: 'mission_id'
-                                    },
-                                ]
-                            }
-                        },
-                    ]
-            }
-        }).then((associate) => {
-            return res.status(201).json({
-                associate,
-            });
+        models.Associate_Manager.findAll({
+            include: [
+                {
+                    model: models.Associate,
+                    as: 'associate', // Alias pour le collaborateur associé
+                },
+            ],
         })
-            .catch((error) => console.error(error));
+            .then((associate) => {
+                // 'associations' contiendra les enregistrements d'Associate_Manager correspondant au manager
+                // avec les informations de l'associé associé à ce manager
+                return res.status(200).json({
+                    associate,
+                });
+            })
+            .catch((error) => {
+                console.error('Une erreur s\'est produite:', error);
+            });
     },
+
     // Récupérer un client par son identifiant
     findById: function (req, res) {
         const associateId = req.params.id;
@@ -258,6 +389,27 @@ module.exports = {
                 {
                     model: models.Graduation,
                     foreignKey: "graduation_id",
+                },
+                {
+                    model: models.Associate, // Utilisez le modèle Associate ici
+                    as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                    through: {
+                        where: {
+                            [Op.and]: [
+                                {
+                                    start_date: {
+                                        [Op.lt]: today()
+                                    }
+                                },
+                                {
+                                    end_date: {
+                                        [Op.gt]: today()
+                                    }
+                                }
+                            ]
+                        },
+                        attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                    },
                 },
                 {
                     model: models.PRU,
@@ -281,10 +433,6 @@ module.exports = {
                                     foreignKey: 'customer_id',
                                     duplicating: false
                                 },
-                                {
-                                    model: models.Associate,
-                                    foreignKey: 'manager_id'
-                                }
                             ]
                         },
                         {
@@ -348,6 +496,7 @@ module.exports = {
                 const pru = req.body.pru;
                 const mail = req.body.mail || associate.mail;
                 const end_date = req.body.end_date || associate.end_date;
+                const manager_id = req.body.manager_id;
                 if (
                     name == null
                     || first_name == null
@@ -358,6 +507,7 @@ module.exports = {
                     || job_id == null
                     || gender_id == null
                     || pru == null
+                    || manager_id == null
                 ) {
                     return res.status(400).json({ error: "Paramètres manquants" });
                 }
@@ -384,7 +534,7 @@ module.exports = {
                                 // On vérifie que le job est bien différent du précédant
                                 if (lastJob.job_id != job_id) {
                                     //On vérifie que le collaborateur à commencé à travailler
-                                    if(updateAssociate.start_date < today()) {
+                                    if (updateAssociate.start_date < today()) {
                                         // On change la date de fin du précédent par celle aujourd'hui
                                         lastJob.update({ end_date: today() })
                                         // On créer la nouvelle association entre un job et un collab
@@ -398,7 +548,52 @@ module.exports = {
                                 updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
                             }
                         })
+                        models.Associate_Manager.findOne({
+                            where: { associate_id: updateAssociate.id },
+                            order: [
+                                ['createdAt', 'DESC'],
+                            ],
+                            limit: 1,
+                        }).then(function (lastManager) {
+                            //on vérifie qu'il y en a bien un sinon on en créer un
+                            if (lastManager != null) {
+                                // On vérifie que le job est bien différent du précédant
+                                if (lastManager.manager_id != manager_id) {
+                                    //On vérifie que le collaborateur à commencé à travailler
+                                    if (updateAssociate.start_date < today()) {
+                                        // On change la date de fin du précédent par celle aujourd'hui
+                                        lastManager.update({ end_date: today() })
+                                        // On créer la nouvelle association entre un job et un collab
+                                        models.Associate_Manager.create({
+                                            associate_id: updateAssociate.id,
+                                            manager_id: manager_id,
+                                            start_date: today(),
+                                            end_date: '9999-12-31 23:59:59'
+                                        }
+                                        )
+                                    } else {
+                                        lastManager.destroy()
+                                        models.Associate_Manager.create({
 
+                                            associate_id: updateAssociate.id,
+                                            manager_id: manager_id,
+                                            start_date: updateAssociate.start_date,
+                                            end_date: '9999-12-31 23:59:59'
+                                        }
+                                        )
+                                    }
+                                }
+                            } else {
+                                models.Associate_Manager.create({
+                                    associate_id: updateAssociate.id,
+                                    manager_id: manager_id,
+                                    start_date: today(),
+                                    end_date: '9999-12-31 23:59:59'
+                                }
+                                )
+                            }
+                        })
+                        console.log(updateAssociate.id)
                         // on récupére le dernier PRU créer pour ce collaborateur
                         models.PRU.findOne({
                             where: { associate_id: updateAssociate.id },
@@ -409,7 +604,7 @@ module.exports = {
                         }).then(function (lastPru) {
                             //on vérifie bien que la valeur du pru est différente
                             if (lastPru != null && lastPru.value != pru) {
-                                if (updateAssociate.start_date < today()) { 
+                                if (updateAssociate.start_date < today()) {
                                     //on modifie la date de fin du précédent PRU en mettant la date du jour comme fin
                                     lastPru.update({ end_date: today() });
                                     //on créer un nouveau PRU avec les nouvelles valeurs commençant à la date du jour

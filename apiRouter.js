@@ -7,6 +7,7 @@ const graduationController = require("./routes/graduationController");
 const jobController = require("./routes/jobController");
 const projectController = require("./routes/projectController");
 const missionController = require("./routes/missionController");
+const pdcController = require("./routes/pdcController");
 
 exports.router = (function () {
   const apiRouter = express.Router();
@@ -22,14 +23,13 @@ exports.router = (function () {
   // apiRouter.route("/customer/:label").get(customerController.findByName);
   apiRouter.route("/customer/update/:id").post(customerController.update);
   
-
   //Associate routes
   apiRouter.route("/associate").post(associateController.create)
   apiRouter.route("/associates").get(associateController.findAllWithLimit)
   apiRouter.route("/associate/:id").get(associateController.findById);
   apiRouter.route("/associate/update/:id").post(associateController.update);
   apiRouter.route("/associates/managers").get(associateController.findManager);
-  apiRouter.route("/associates/pdc").get(associateController.findAll);
+  apiRouter.route("/associates/all").get(associateController.findAll);
   
   //Job routes
   apiRouter.route("/job").post(jobController.create)
@@ -52,6 +52,9 @@ exports.router = (function () {
   apiRouter.route("/mission/update/:id").post(missionController.update);
   apiRouter.route("/missions").get(missionController.findAll)
   apiRouter.route("/missions/ongoing").get(missionController.findAllOngoing)
+
+  //pdc routes
+  apiRouter.route("/pdc").get(pdcController.createPDC)
 
   return apiRouter;
 })();

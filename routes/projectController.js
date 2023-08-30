@@ -5,12 +5,10 @@ module.exports = {
         const label = req.body.label;
         const adv = req.body.adv;
         const customer_id = req.body.customer_id;
-        const manager_id = req.body.manager_id;
         if (
             label == null,
             adv == null,
-            customer_id == null,
-            manager_id == null
+            customer_id == null
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
@@ -20,11 +18,10 @@ module.exports = {
         })
             .then(function (projectFound) {
                 if (!projectFound) {
-                    const newProject = models.Project.create({
+                    models.Project.create({
                         label: label,
                         adv: adv,
                         customer_id: customer_id,
-                        manager_id: manager_id,
                     })
                         .then(function (newProject) {
                             return res.status(201).json({
@@ -61,20 +58,20 @@ module.exports = {
                         {
                             model: models.Associate,
                             foreignKey: 'associate_id',
-                            include: {
+                            include: [{
                                 model: models.PRU,
                                 foreignKey: 'associate_id'
-                            }
+                            },
+                            {
+                                model: models.Associate, // Utilisez le modèle Associate ici
+                                as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                                through: {
+                                    attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                                },
+                            },
+                            ]
                         }
                     ]
-                },
-                {
-                    model: models.Associate,
-                    foreignKey: "manager_id",
-                    include: {
-                        model: models.PRU,
-                        foreignKey: 'associate_id',
-                    }
                 },
             ]
         })
@@ -99,7 +96,7 @@ module.exports = {
         })
             .then((customer) => {
                 if (!customer) {
-                    return res.status(404).json({ error: "proejct for this customer not found" });
+                    return res.status(404).json({ error: "project for this customer not found" });
                 }
 
                 return res.status(200).json(customer);
