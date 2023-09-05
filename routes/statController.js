@@ -1,0 +1,517 @@
+const models = require("../models");
+const {
+    startOfMonth,
+    endOfMonth,
+    eachMonthOfInterval,
+    format,
+    getYear,
+    getMonth,
+    eachDayOfInterval,
+    isWeekend
+} = require("date-fns");
+const { Op } = require("sequelize");
+const { fr } = require("date-fns/locale");
+
+function getWorkingDaysInMonth(year, month) {
+    // Attendre que getOffDays ait fini son traitement avant de continuer
+
+    let startDate = new Date(year, month, 1);
+    let endDate = new Date(year, month + 1, 0);
+
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate });
+    const workingDays = allDays.filter((day) => !isWeekend(day));
+
+    let nbJours = workingDays.length;
+
+    return nbJours;
+}
+//Génére la liste des mois de l'année passée en paramètre allant de S14 à S13
+function generateMonthList(year) {
+    const list_start = startOfMonth(new Date(year, 3, 1));
+    const list_end = startOfMonth(new Date(year + 1, 2, 1));
+    const monthsList = eachMonthOfInterval({
+        start: list_start,
+        end: list_end,
+        monthStartsOn: 1,
+    });
+
+    const allMonths = monthsList.map((date) => {
+        const month = format(date, "MMMM", { locale: fr });
+        const startDateOfMonth = startOfMonth(date, { weekStartsOn: 1 });
+        const endDateOfMonth = endOfMonth(date, { weekEndsOn: 1 });
+
+        let nbDay = getWorkingDaysInMonth(
+            getYear(startDateOfMonth),
+            getMonth(startDateOfMonth)
+        );
+
+        // console.log(format(startDateOfMonth, "yyyy-MM-dd") + ' : ' + nbDay)
+
+        return {
+            monthNumber: month,
+            start_date: format(startDateOfMonth, "yyyy-MM-dd"),
+            end_date: format(endDateOfMonth, "yyyy-MM-dd"),
+            nb_day: nbDay,
+        };
+    });
+    // console.log(allMonths)
+    return allMonths;
+}
+
+function today() {
+    var date = new Date();
+
+    // Obtenir les composants de la date
+    var annee = date.getFullYear(); // Année à 4 chiffres
+    var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
+    var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
+
+    // Obtenir les composants de l'heure
+    var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
+    var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
+    var secondes = ('0' + date.getSeconds()).slice(-2); // Secondes (ajoute un zéro devant si nécessaire)
+
+    // Concaténer les composants dans le format souhaité
+    return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
+}
+
+module.exports = {
+    calculateStatsManager: function (req, res) {
+        models.Job.findAll({
+            where: { id: 3 },
+            include:
+            {
+                model: models.Associate,
+                include:
+                    [
+                        {
+                            model: models.PRU,
+                            foreignKey: 'associate_id'
+                        },
+                        {
+                            model: models.Associate,
+                            as: 'associates',
+                            foreignKey: 'manager_id',
+                            include:
+                                [
+                                    {
+                                        model: models.PRU,
+                                        foreignKey: 'associate_id',
+                                    },
+
+                                    {
+                                        model: models.Mission,
+                                        foreignKey: 'project_id',
+                                        include: [
+                                            {
+                                                model: models.Associate,
+                                                foreignKey: 'associate_id',
+                                                include: {
+                                                    model: models.PRU,
+                                                    foreignKey: 'associate_id'
+                                                }
+                                            },
+                                            {
+                                                model: models.TJM,
+                                                foreignKey: 'mission_id'
+                                            },
+                                            {
+                                                model: models.Imputation,
+                                                foreignKey: 'mission_id'
+                                            },
+                                        ]
+                                    }
+                                ]
+                        },
+                    ]
+            }
+        }).then((managers) => {
+            const year = parseInt(req.query.year);
+            const manager_id = parseInt(req.query.manager);
+            let ca = []
+            let value = 0;
+            const months = generateMonthList(year)
+
+            managers.forEach((job) => {
+                job.Associates.forEach((manager) => {
+                    if (manager.id == manager_id) {
+
+                        months.forEach((month) => {
+                            let marge = 0;
+                            manager.PRUs.forEach((PRU) => {
+                                if (
+                                    format(PRU.start_date, "yyyy-MM-dd") <= month.end_date && // Vérifie si la date de début du PRU est antérieure ou égale à la date de fin du mois
+                                    format(PRU.end_date, "yyyy-MM-dd") >= month.start_date // Vérifie si la date de fin du PRU est postérieure ou égale à la date de début du mois
+                                ) {
+                                    value -= PRU.value * month.nb_day;
+                                    marge -= PRU.value * month.nb_day;
+                                }
+                            });
+                            manager.associates.forEach((collab) => {
+                                collab.Missions.forEach((mission) => {
+                                    // Si la mission commence avant et fini après le mois en cours
+                                    if (
+                                        mission.start_date <= month.start_date &&
+                                        mission.end_date >= month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((TJM) => {
+                                            if (
+                                                TJM.start_date <= month.start_date &&
+                                                TJM.end_date >= month.end_date
+                                            ) {
+                                                value += TJM.value * month.nb_day;
+                                                marge += TJM.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((PRU) => {
+                                            if (
+                                                PRU.start_date <= month.start_date &&
+                                                PRU.end_date >= month.end_date
+                                            ) {
+                                                value -= PRU.value * month.nb_day;
+                                                marge -= PRU.value * month.nb_day;
+                                            }
+                                        });
+
+                                        //Si la mission commence pendant le mois en cours
+                                    } else if (
+                                        mission.start_date >= month.start_date &&
+                                        mission.start_date < month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((TJM) => {
+                                            if (
+                                                TJM.start_date <= month.start_date &&
+                                                TJM.end_date >= month.end_date
+                                            ) {
+                                                value += TJM.value * month.nb_day;
+                                                marge += TJM.value * month.nb_day;
+                                            } else if (
+                                                TJM.start_date >= month.start_date &&
+                                                TJM.start_date < month.end_date
+                                            ) {
+                                                value += TJM.value * month.nb_day;
+                                                marge += TJM.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((PRU) => {
+                                            if (
+                                                PRU.start_date <= month.start_date &&
+                                                PRU.end_date >= month.end_date
+                                            ) {
+                                                value -= PRU.value * month.nb_day;
+                                                marge -= PRU.value * month.nb_day;
+                                            } else if (
+                                                PRU.start_date >= month.start_date &&
+                                                PRU.start_date < month.end_date
+                                            ) {
+                                                value -= PRU.value * month.nb_day;
+                                                marge -= PRU.value * month.nb_day;
+                                            }
+                                        });
+
+                                        //Si la mission termine pendant le mois en cours
+                                    } else if (
+                                        mission.end_date >= month.start_date &&
+                                        mission.end_date <= month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((TJM) => {
+                                            if (
+                                                TJM.start_date <= month.start_date &&
+                                                TJM.end_date >= month.end_date
+                                            ) {
+                                                value += TJM.value * month.nb_day;
+                                                marge += TJM.value * month.nb_day;
+                                            } else if (
+                                                TJM.end_date >= month.start_date &&
+                                                TJM.end_date < month.end_date
+                                            ) {
+                                                value += TJM.value * month.nb_day;
+                                                marge += TJM.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((PRU) => {
+                                            if (
+                                                PRU.start_date <= month.start_date &&
+                                                PRU.end_date >= month.end_date
+                                            ) {
+                                                value -= PRU.value * month.nb_day;
+                                                marge -= PRU.value * month.nb_day;
+                                            } else if (
+                                                PRU.end_date >= month.start_date &&
+                                                PRU.end_date < month.end_date
+                                            ) {
+                                                value -= PRU.value * month.nb_day;
+                                                marge -= PRU.value * month.nb_day;
+                                            }
+                                        });
+                                    }
+                                })
+                            });
+                            ca.push({ month: month.monthNumber, value: value, marge: marge });
+                        });
+                    }
+                });
+            });
+            return res.status(201).json({
+                ca,
+            });
+        })
+            .catch((error) => console.error(error));
+
+    },
+    calculateStatsAgence: function (req, res) {
+        models.Associate.findAll({
+            order: [['name', 'ASC']],
+            include: [
+                {
+                    model: models.PRU,
+                    foreignKey: 'associate_id',
+                    where: {
+                        [Op.and]: [
+                            {
+                                start_date: {
+                                    [Op.lt]: today()
+                                }
+                            },
+                            {
+                                end_date: {
+                                    [Op.gt]: today()
+                                }
+                            }
+                        ]
+                    },
+                },
+                {
+                    model: models.Mission,
+                    foreignKey: 'associate_id',
+                    include: [
+                        {
+                            model: models.Project,
+                            foreignKey: 'project_id',
+                            include: [
+                                {
+                                    model: models.Customer,
+                                    foreignKey: 'customer_id',
+                                },
+                            ],
+                        },
+                        {
+                            model: models.TJM,
+                            foreignKey: 'mission_id'
+                        }
+                    ],
+                },
+            ],
+        })
+            .then((associate) => {
+                const year = parseInt(req.query.year);
+                const months = generateMonthList(year)
+                let ca = 0;
+                caForMonths = [];
+                months.forEach((month) => {
+                    associate.forEach((associate) => {
+                        associate.PRUs.forEach((PRU) => {
+                            if (
+                                format(PRU.start_date, "yyyy-MM-dd") <= month.start_date &&
+                                format(PRU.end_date, "yyyy-MM-dd") >= month.end_date
+                            ) {
+
+                                ca -= PRU.value * month.nb_day;
+                            } else if (
+                                format(PRU.start_date, "yyyy-MM-dd") >= month.start_date &&
+                                format(PRU.start_date, "yyyy-MM-dd") <= month.end_date
+                            ) {
+                                ca -= PRU.value * month.nb_day;
+                            } else if (
+                                format(PRU.end_date, "yyyy-MM-dd") >= month.start_date &&
+                                format(PRU.end_date, "yyyy-MM-dd") <= month.end_date
+                            ) {
+                                ca -= PRU.value * month.nb_day;
+                            }
+                        });
+                        associate.Missions.forEach((mission) => {
+                            mission.TJMs.forEach((tjm) => {
+                                if (
+                                    tjm.start_date <= month.start_date &&
+                                    tjm.end_date >= month.end_date
+                                ) {
+                                    ca += tjm.value * month.nb_day;
+                                } else if (
+                                    tjm.start_date >= month.start_date &&
+                                    tjm.start_date <= month.end_date
+                                ) {
+                                    ca += tjm.value * month.nb_day;
+                                } else if (
+                                    tjm.end_date >= month.start_date &&
+                                    tjm.end_date <= month.end_date
+                                ) {
+                                    ca += tjm.value * month.nb_day;
+                                }
+                            });
+                        });
+                    });
+                    caForMonths.push({ month: month.monthNumber, value: ca });
+                });
+                return res.status(201).json({
+                    caForMonths,
+                });
+            })
+            .catch((error) => console.error(error));
+
+    },
+    calculateStatsCustomer: function (req, res) {
+        models.Customer.findAll({
+            include: [
+                {
+                    model: models.Project,
+                    foreignKey: "customer_id",
+                    include: [
+                        {
+                            model: models.Mission,
+                            foreignKey: 'project_id',
+                            where:
+                            {
+                                [Op.and]: [
+                                    {
+                                        start_date: {
+                                            [Op.lt]: today()
+                                        }
+                                    },
+                                    {
+                                        end_date: {
+                                            [Op.gt]: today()
+                                        }
+                                    }
+                                ]
+                            },
+                            include: [
+                                {
+                                    model: models.Associate,
+                                    foreignKey: "associate_id",
+                                    include: 
+                                    {
+                                        model: models.PRU,
+                                        foreignKey: "associate_id"
+                                    }
+                                },
+                                {
+                                    model: models.Imputation,
+                                    foreignKey: "mission_id"
+                                },
+
+                                {
+                                    model: models.TJM,
+                                    foreignKey: "mission_id"
+                                },
+                            ],
+                            group: 'associate_id'
+                        }
+                    ]
+                }
+            ]
+        })
+            .then((customer) => {
+                let customerSelected = parseInt(req.query.customer)
+                let ca = 0;
+                let caOfCustomer = [];
+                const months = generateMonthList(2023)
+                customer.forEach((customer) => {
+                    if (customer.id == customerSelected) {
+                        months.forEach((month) => {
+                            customer.Projects.forEach((project) => {
+                                project.Missions.forEach((mission) => {
+                                    if (
+                                        mission.start_date <= month.start_date &&
+                                        mission.end_date >= month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((tjm) => {
+                                            if (
+                                                tjm.start_date <= month.start_date &&
+                                                tjm.end_date >= month.end_date
+                                            ) {
+                                                ca += tjm.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((pru) => {
+                                            if (
+                                                format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
+                                                format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                            ) {
+                                                ca -= pru.value * month.nb_day;
+                                            }
+                                        });
+                                    } else if (
+                                        mission.start_date >= month.start_date &&
+                                        mission.start_date < month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((TJM) => {
+                                            if (
+                                                TJM.start_date <= month.start_date &&
+                                                TJM.end_date >= month.end_date
+                                            ) {
+                                                ca += TJM.value * month.nb_day;
+                                            } else if (
+                                                TJM.start_date >= month.start_date &&
+                                                TJM.start_date < month.end_date
+                                            ) {
+                                                ca += TJM.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((pru) => {
+                                            if (
+                                                format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
+                                                format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                            ) {
+                                                ca -= pru.value * month.nb_day;
+                                            } else if (
+                                                format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
+                                                format(pru.end_date, "yyyy-MM-dd") < month.end_date
+                                            ) {
+                                                ca -= pru.value * month.nb_day;
+                                            }
+                                        });
+                                        //Si la mission termine pendant le mois en cours
+                                    } else if (
+                                        mission.end_date >= month.start_date &&
+                                        mission.end_date <= month.end_date
+                                    ) {
+                                        mission.TJMs.forEach((TJM) => {
+                                            if (
+                                                TJM.start_date <= month.start_date &&
+                                                TJM.end_date >= month.end_date
+                                            ) {
+                                                ca += TJM.value * month.nb_day;
+                                            } else if (
+                                                TJM.end_date >= month.start_date &&
+                                                TJM.end_date < month.end_date
+                                            ) {
+                                                ca += TJM.value * month.nb_day;
+                                            }
+                                        });
+                                        mission.Associate.PRUs.forEach((pru) => {
+                                            if (
+                                                format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
+                                                format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                            ) {
+                                                ca -= pru.value * month.nb_day;
+                                            } else if (
+                                                format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
+                                                format(pru.end_date, "yyyy-MM-dd") < month.end_date
+                                            ) {
+                                                ca -= pru.value * month.nb_day;
+                                            }
+                                        });
+                                    }
+                                });
+                            });
+                            caOfCustomer.push({ month: month.monthNumber, value: ca });
+                        });
+                    }
+                });
+                return res.status(201).json({
+                    caOfCustomer,
+                });
+            })
+            .catch((error) => console.error(error));
+    }
+}

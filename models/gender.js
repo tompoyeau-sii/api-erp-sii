@@ -19,7 +19,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Gender.init({
-    label: DataTypes.STRING
+    label:{ 
+      type: DataTypes.STRING,
+      allowNull: false,
+    }
   }, {
     sequelize,
     modelName: 'Gender',

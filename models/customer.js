@@ -12,12 +12,13 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Customer.hasMany(models.Project, {
-        foreignKey: 'customer_id'
+        foreignKey: 'customer_id',
+         onDelete: 'CASCADE',
       })
     }
   }
   Customer.init({
-    label: DataTypes.STRING
+    label: { type: DataTypes.STRING, allowNull: false, }
   }, {
     sequelize,
     modelName: 'Customer',

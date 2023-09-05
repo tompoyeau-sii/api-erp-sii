@@ -18,7 +18,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Graduation.init({
-    label: DataTypes.STRING
+    label:
+    {
+      type: DataTypes.STRING,
+      allowNull: false,
+    }
   }, {
     sequelize,
     modelName: 'Graduation',

@@ -8,6 +8,8 @@ const jobController = require("./routes/jobController");
 const projectController = require("./routes/projectController");
 const missionController = require("./routes/missionController");
 const pdcController = require("./routes/pdcController");
+const testController = require("./routes/testController");
+const statController = require("./routes/statController");
 
 exports.router = (function () {
   const apiRouter = express.Router();
@@ -55,6 +57,14 @@ exports.router = (function () {
 
   //pdc routes
   apiRouter.route("/pdc").get(pdcController.createPDC)
+  
+  //pdc routes
+  apiRouter.route("/test").get(testController.test)
+
+  //statistiques routes
+  apiRouter.route("/statistiques/manager").get(statController.calculateStatsManager)
+  apiRouter.route("/statistiques/agence").get(statController.calculateStatsAgence)
+  apiRouter.route("/statistiques/customer").get(statController.calculateStatsCustomer)
 
   return apiRouter;
 })();

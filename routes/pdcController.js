@@ -1,5 +1,5 @@
 const models = require("../models");
-const { Op } = require("sequelize");
+const { Op, literal } = require("sequelize");
 const {
     eachWeekOfInterval,
     getISOWeek,
@@ -24,29 +24,34 @@ function today() {
     // Concaténer les composants dans le format souhaité
     return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
 }
-
+//Permet de déterminer l'état (en mission, en intercontrat ou hors sii) d'un collaborateur
 function isWorking(associate, year) {
-    this.loading = true;
+    // la personne n'est pas chez sii
     if (
-        associate.start_date >= year.endDate ||
-        associate.end_date < year.startDate
+        associate.start_date >= year.endDate || associate.end_date <= year.startDate
     ) {
-        this.loading = false;
         return 3;
     }
+    // la personne est en mission
     for (let mission of associate.Missions) {
         if (
             mission.start_date < year.endDate &&
             mission.end_date > year.startDate
         ) {
-            this.loading = false;
             return 1;
         }
+        else {
+            // la personne est en intercontrat
+            return 2;
+        }
     }
-    this.loading = false;
-    return 2;
-};
 
+    if (associate.Missions.length == 0) {
+        return 2;
+    }
+
+};
+// Génére la liste des semaines dans l'année passé en paramètre et de l'année +1 
 function generateWeekList(year) {
     const startDate = new Date(year, 0, 1); // Premier jour de l'année
     const endDate = new Date(year + 1, 11, 31); // Dernier jour de l'année
@@ -71,6 +76,7 @@ function generateWeekList(year) {
     });
     return weekList;
 };
+// Modifie la liste générer par la méthode generateWeekList pour que la liste commence en S14 et finissent en S13
 function weeksFilter(weeks) {
     let weeksFiltered = [];
     let i = 0;
@@ -92,37 +98,52 @@ function weeksFilter(weeks) {
 
 module.exports = {
     createPDC: function (req, res) {
+        const selected_year = parseInt(req.query.year);
+        const collab = req.query.collab;
+        const customer = parseInt(req.query.customer);
+        const project = parseInt(req.query.project);
 
-        const selectedYear = 2023;
-        const weeks = weeksFilter(generateWeekList(selectedYear));
+        const weeks = weeksFilter(generateWeekList(selected_year));
         const pdc = [];
+        const whereClause = {};
+
+        if (!isNaN(selected_year)) {
+            whereClause.year = selected_year;
+        }
+
+        if (collab) {
+            whereClause.collab = collab;
+        }
+
+        if (!isNaN(customer)) {
+            whereClause.customer = customer;
+        }
+
+        if (!isNaN(project)) {
+            whereClause.project = project;
+        }
 
         models.Associate.findAll({
             order: [['name', 'ASC']],
-            include: [
-                {
-                    model: models.Graduation,
-                    foreignKey: 'graduation_id',
-                    attributes: ['label'],
-                },
-                {
-                    model: models.PRU,
-                    foreignKey: 'associate_id',
-                    where: {
-                        [Op.and]: [
+            where: {
+                [Op.and]: [
+                    whereClause.collab ? {
+                        [Op.or]: [
                             {
-                                start_date: {
-                                    [Op.lt]: today()
+                                name: {
+                                    [Op.substring]: whereClause.collab,
                                 }
                             },
                             {
-                                end_date: {
-                                    [Op.gt]: today()
+                                first_name: {
+                                    [Op.substring]: whereClause.collab,
                                 }
                             }
                         ]
-                    },
-                },
+                    } : {}, // Filtre sur le nom ou le prénom uniquement si collab n'est pas vide
+                ]
+            },
+            include: [
                 {
                     model: models.Associate, // Utilisez le modèle Associate ici
                     as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
@@ -170,19 +191,36 @@ module.exports = {
             .then((associates) => {
 
                 weeks.forEach((week) => {
+                    let nbInterContrat = 0;
+                    let nbInMission = 0;
+                    let horsSII = 0;
                     var week_info = {
                         weekNumber: 'S' + week.weekNumber,
-                        associates: []
+                        associates: [],
+                        nbInterContrat,
+                        nbInMission,
+                        horsSII,
                     };
 
                     associates.forEach((associate) => {
                         state = isWorking(associate, week);
+                        if (state == 1) {
+                            nbInMission++;
+                        } else if (state == 2) {
+                            nbInterContrat++;
+                        } else {
+                            horsSII++;
+                        }
                         full_name = associate.first_name + ' ' + associate.name
                         week_info.associates.push({
                             full_name: full_name,
                             state: state
                         });
                     });
+
+                    week_info.nbInterContrat = nbInterContrat;
+                    week_info.nbInMission = nbInMission;
+                    week_info.horsSII = horsSII;
 
                     pdc.push(week_info);
                 });

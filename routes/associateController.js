@@ -282,103 +282,63 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
-    // findManager: function (req, res) {
-    //     models.Job.findAll({
-    //         where: { id: 3 },
-    //         include:
-    //         {
-    //             model: models.Associate,
-    //             include:
-    //                 [
-    //                     {
-    //                         model: models.PRU,
-    //                         foreignKey: 'associate_id'
-    //                     },
-    //                     {
-    //                         model: models.Associate,
-    //                         as: 'managers',
-    //                         foreignKey: 'manager_id',
-    //                     },
-    //                     {
-    //                         model: models.Mission,
-    //                         foreignKey: 'project_id',
-    //                         include: [
-    //                             {
-    //                                 model: models.Associate,
-    //                                 foreignKey: 'associate_id',
-    //                                 include: {
-    //                                     model: models.PRU,
-    //                                     foreignKey: 'associate_id'
-    //                                 }
-    //                             },
-    //                             {
-    //                                 model: models.TJM,
-    //                                 foreignKey: 'mission_id'
-    //                             },
-    //                             {
-    //                                 model: models.Imputation,
-    //                                 foreignKey: 'mission_id'
-    //                             },
-    //                         ]
-    //                     }
-    //                 ]
-    //         }
-    //     }).then((associate) => {
-    //         return res.status(201).json({
-    //             associate,
-    //         });
-    //     })
-    //         .catch((error) => console.error(error));
-    // },
-    
-    // findManager: function (req, res) {
-    //     models.Job.findAll({
-    //         where: { label: "Manager" },
-    //         include:
-    //         {
-    //             model: models.Associate,
-    //             include: [
-    //                 {
-    //                     model: models.Associate,
-    //                     as: 'associate',
-    //                     foreignKey: 'associate_id',
-    //                 },
-    //                 {
-    //                     model: models.PRU,
-    //                     foreignKey: 'associate_id',
-    //                 }
-    //             ]
-    //         }
-    //     }).then((associate) => {
-    //         return res.status(200).json({
-    //             associate,
-    //         });
-    //     }).catch((error) => {
-    //         console.error(error);
-    //         return res.status(500).json({ error: "Error while fetching managers" });
-    //     });
-    // },
     findManager: function (req, res) {
-        models.Associate_Manager.findAll({
-            include: [
-                {
-                    model: models.Associate,
-                    as: 'associate', // Alias pour le collaborateur associé
-                },
-            ],
-        })
-            .then((associate) => {
-                // 'associations' contiendra les enregistrements d'Associate_Manager correspondant au manager
-                // avec les informations de l'associé associé à ce manager
-                return res.status(200).json({
-                    associate,
-                });
-            })
-            .catch((error) => {
-                console.error('Une erreur s\'est produite:', error);
-            });
-    },
+        models.Job.findAll({
+            where: { id: 3 },
+            include:
+            {
+                model: models.Associate,
+                include:
+                    [
+                        {
+                            model: models.PRU,
+                            foreignKey: 'associate_id'
+                        },
+                        {
+                            model: models.Associate,
+                            as: 'associates',
+                            foreignKey: 'manager_id',
+                            include:
+                            [
+                                {
+                                    model: models.PRU,
+                                    foreignKey: 'associate_id',
+                                },
 
+                                {
+                                    model: models.Mission,
+                                    foreignKey: 'project_id',
+                                    include: [
+                                        {
+                                            model: models.Associate,
+                                            foreignKey: 'associate_id',
+                                            include: {
+                                                model: models.PRU,
+                                                foreignKey: 'associate_id'
+                                            }
+                                        },
+                                        {
+                                            model: models.TJM,
+                                            foreignKey: 'mission_id'
+                                        },
+                                        {
+                                            model: models.Imputation,
+                                            foreignKey: 'mission_id'
+                                        },
+                                    ]
+                                }
+                            ]
+                        },
+                        
+                    ]
+            }
+        }).then((manager) => {
+            return res.status(201).json({
+                manager,
+            });
+        })
+            .catch((error) => console.error(error));
+    },
     // Récupérer un client par son identifiant
     findById: function (req, res) {
         const associateId = req.params.id;
@@ -637,5 +597,4 @@ module.exports = {
                 return res.status(500).json({ error: "unable to fetch associate" });
             });
     }
-
 };
