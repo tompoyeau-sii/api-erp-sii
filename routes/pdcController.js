@@ -7,6 +7,7 @@ const {
     endOfWeek,
     format,
 } = require("date-fns");
+const { forEach } = require("async");
 
 function today() {
     var date = new Date();
@@ -99,50 +100,17 @@ function weeksFilter(weeks) {
 module.exports = {
     createPDC: function (req, res) {
         const selected_year = parseInt(req.query.year);
-        const collab = req.query.collab;
-        const customer = parseInt(req.query.customer);
-        const project = parseInt(req.query.project);
+        const researchCollab = req.query.search;
+        const selected_manager = req.query.manager;
+        const selected_customer = req.query.customer;
+        const selected_project = req.query.project;
 
         const weeks = weeksFilter(generateWeekList(selected_year));
-        const pdc = [];
-        const whereClause = {};
-
-        if (!isNaN(selected_year)) {
-            whereClause.year = selected_year;
-        }
-
-        if (collab) {
-            whereClause.collab = collab;
-        }
-
-        if (!isNaN(customer)) {
-            whereClause.customer = customer;
-        }
-
-        if (!isNaN(project)) {
-            whereClause.project = project;
-        }
+        var pdc = [];
+        const outWeeks = [];
 
         models.Associate.findAll({
             order: [['name', 'ASC']],
-            where: {
-                [Op.and]: [
-                    whereClause.collab ? {
-                        [Op.or]: [
-                            {
-                                name: {
-                                    [Op.substring]: whereClause.collab,
-                                }
-                            },
-                            {
-                                first_name: {
-                                    [Op.substring]: whereClause.collab,
-                                }
-                            }
-                        ]
-                    } : {}, // Filtre sur le nom ou le prénom uniquement si collab n'est pas vide
-                ]
-            },
             include: [
                 {
                     model: models.Associate, // Utilisez le modèle Associate ici
@@ -166,9 +134,25 @@ module.exports = {
                     },
                 },
                 {
-                    model: models.Job,
-                    foreignKey: 'job_id',
-                    attributes: ['label'],
+                    model: models.Associate, // Utilisez le modèle Associate ici
+                    as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                    through: {
+                        where: {
+                            [Op.and]: [
+                                {
+                                    start_date: {
+                                        [Op.lt]: today()
+                                    }
+                                },
+                                {
+                                    end_date: {
+                                        [Op.gt]: today()
+                                    }
+                                }
+                            ]
+                        },
+                        attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                    },
                 },
                 {
                     model: models.Mission,
@@ -190,19 +174,100 @@ module.exports = {
         })
             .then((associates) => {
 
+                // Liste générant le pdc
+                associates.forEach((associate) => {
+
+                    full_name = associate.first_name + ' ' + associate.name;
+                    let projects = []
+                    let customers = []
+                    let managers = []
+
+                    associate.Missions.forEach((mission) => {
+                        projects.push(mission.Project.label);
+                        customers.push(mission.Project.Customer.label);
+                    })
+                    associate.managers.forEach((manager) => {
+                        managers.push(manager.first_name + ' ' + manager.name)
+                    })
+
+                    var associate_info = {
+                        full_name: full_name,
+                        projects: projects,
+                        customers: customers,
+                        managers: managers,
+                        start_date: associate.start_date,
+                        end_date: associate.end_date,
+                        Missions: associate.Missions,
+                        weeks: [],
+                    };
+
+                    weeks.forEach((week) => {
+                        let nbInterContrat = 0;
+                        let nbInMission = 0;
+                        let horsSII = 0;
+                        state = isWorking(associate, week);
+
+                        if (state == 1) {
+                            nbInMission++;
+                        } else if (state == 2) {
+                            nbInterContrat++;
+                        } else {
+                            horsSII++;
+                        }
+
+                        associate_info.weeks.push({
+                            weekNumber: 'S' + week.weekNumber,
+                            state: state,
+                        });
+                    });
+                    pdc.push(associate_info);
+
+                    // on filtre sur le nom prenom des collabs
+                    if (researchCollab) {
+                        const searchTerm = researchCollab.toLowerCase();
+                        pdc = pdc.filter((associate) => {
+                            return associate.full_name.toLowerCase().includes(searchTerm);
+                        });
+                    }
+
+                    // filtre sur le manager
+                    if (selected_manager) {
+                        pdc = pdc.filter((associate) =>
+                            associate.managers.some((manager) => manager === selected_manager)
+                        );
+                    }
+
+                    // filtre sur le client
+                    if (selected_customer) {
+                        pdc = pdc.filter((associate) =>
+                            associate.customers.some(
+                                (customer) => customer === selected_customer
+                            )
+                        );
+                    }
+
+                    //filtre sur le projet
+                    if (selected_project) {
+                        pdc = pdc.filter((associate) =>
+                            associate.projects.some((project) => project === selected_project)
+                        );
+                    }
+
+                });
+
+                // Liste pour récupérer le nombre de collaborateurs en contrat ou interco chaque semaine
                 weeks.forEach((week) => {
                     let nbInterContrat = 0;
                     let nbInMission = 0;
                     let horsSII = 0;
                     var week_info = {
                         weekNumber: 'S' + week.weekNumber,
-                        associates: [],
                         nbInterContrat,
                         nbInMission,
                         horsSII,
                     };
 
-                    associates.forEach((associate) => {
+                    pdc.forEach((associate) => {
                         state = isWorking(associate, week);
                         if (state == 1) {
                             nbInMission++;
@@ -211,22 +276,17 @@ module.exports = {
                         } else {
                             horsSII++;
                         }
-                        full_name = associate.first_name + ' ' + associate.name
-                        week_info.associates.push({
-                            full_name: full_name,
-                            state: state
-                        });
                     });
-
+ 
                     week_info.nbInterContrat = nbInterContrat;
                     week_info.nbInMission = nbInMission;
                     week_info.horsSII = horsSII;
 
-                    pdc.push(week_info);
+                    outWeeks.push(week_info);
                 });
-
                 return res.status(201).json({
-                    pdc
+                    pdc,
+                    outWeeks,
                 });
 
             }).catch((error) => console.error(error));
