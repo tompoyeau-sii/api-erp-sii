@@ -18,6 +18,10 @@ module.exports = (sequelize, DataTypes) => {
   }
   TJM.init({
     mission_id: DataTypes.INTEGER,
+    mission_reference: {
+      type: DataTypes.STRING,
+      allowNull: false, // Champ "mission_id" ne peut pas être NULL
+    },
     start_date: DataTypes.DATEONLY,
     end_date: DataTypes.DATEONLY,
     value: DataTypes.FLOAT

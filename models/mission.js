@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false, // Champ "label" ne peut pas être NULL
     },
+    reference: {
+      type: DataTypes.STRING,
+      allowNull: false, // Champ "label" ne peut pas être NULL
+    },
     associate_id: {
       type: DataTypes.INTEGER,
       allowNull: false, // Champ "associate_id" ne peut pas être NULL
@@ -41,6 +45,18 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false, // Champ "start_date" ne peut pas être NULL
     },
     end_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false, // Champ "end_date" ne peut pas être NULL
+    },
+    imputation_value: {
+      type: DataTypes.INTEGER,
+      allowNull: false, // Champ "project_id" ne peut pas être NULL
+    },
+    imputation_start: {
+      type: DataTypes.DATEONLY,
+      allowNull: false, // Champ "start_date" ne peut pas être NULL
+    },
+    imputation_end: {
       type: DataTypes.DATEONLY,
       allowNull: false, // Champ "end_date" ne peut pas être NULL
     },
