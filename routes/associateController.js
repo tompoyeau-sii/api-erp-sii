@@ -40,19 +40,19 @@ module.exports = {
         const pru = req.body.pru;
         const manager_id = req.body.manager_id;
 
-        if (
-            name == null ||
+        if (name == null ||
             first_name == null ||
             birthdate == null ||
             mail == null ||
             start_date == null ||
             graduation_id == null ||
-            job_id == null ||
             gender_id == null ||
-            pru == null ||
-            manager_id == null
-        ) {
+            pru == null) {
             return res.status(400).json({ error: "Paramètres manquants" });
+        } 
+
+        if(job_id != 1 && manager_id == null) {
+            return res.status(400).json({ error: "Seul les collaborateurs ayant le poste manager peuvent ne pas avoir de manager." });
         }
 
         models.Associate.findOne({
@@ -284,7 +284,7 @@ module.exports = {
     },
     findManager: function (req, res) {
         models.Job.findAll({
-            where: { id: 3 },
+            where: { id: 1 },
             include:
             {
                 model: models.Associate,
@@ -299,37 +299,37 @@ module.exports = {
                             as: 'associates',
                             foreignKey: 'manager_id',
                             include:
-                            [
-                                {
-                                    model: models.PRU,
-                                    foreignKey: 'associate_id',
-                                },
+                                [
+                                    {
+                                        model: models.PRU,
+                                        foreignKey: 'associate_id',
+                                    },
 
-                                {
-                                    model: models.Mission,
-                                    foreignKey: 'project_id',
-                                    include: [
-                                        {
-                                            model: models.Associate,
-                                            foreignKey: 'associate_id',
-                                            include: {
-                                                model: models.PRU,
-                                                foreignKey: 'associate_id'
-                                            }
-                                        },
-                                        {
-                                            model: models.TJM,
-                                            foreignKey: 'mission_id'
-                                        },
-                                        {
-                                            model: models.Imputation,
-                                            foreignKey: 'mission_id'
-                                        },
-                                    ]
-                                }
-                            ]
+                                    {
+                                        model: models.Mission,
+                                        foreignKey: 'project_id',
+                                        include: [
+                                            {
+                                                model: models.Associate,
+                                                foreignKey: 'associate_id',
+                                                include: {
+                                                    model: models.PRU,
+                                                    foreignKey: 'associate_id'
+                                                }
+                                            },
+                                            {
+                                                model: models.TJM,
+                                                foreignKey: 'mission_id'
+                                            },
+                                            {
+                                                model: models.Imputation,
+                                                foreignKey: 'mission_id'
+                                            },
+                                        ]
+                                    }
+                                ]
                         },
-                        
+
                     ]
             }
         }).then((manager) => {

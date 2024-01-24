@@ -6,8 +6,8 @@ const {
     startOfWeek,
     endOfWeek,
     format,
+    parseISO,
 } = require("date-fns");
-const { forEach } = require("async");
 
 function today() {
     var date = new Date();
@@ -26,39 +26,30 @@ function today() {
     return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
 }
 //Permet de déterminer l'état (en mission, en intercontrat ou hors sii) d'un collaborateur
-function isWorking(associate, year) {
+function isWorking(associate, week) {
     // la personne n'est pas chez sii
-    if (
-        associate.start_date >= year.endDate || associate.end_date <= year.startDate
-    ) {
+    if (associate.start_date >= week.endDate || associate.end_date <= week.startDate) {
         return 3;
     }
+
     // la personne est en mission
     for (let mission of associate.Missions) {
         if (
-            mission.start_date < year.endDate &&
-            mission.end_date > year.startDate
+            mission.date_range_mission[0].value < week.endDate &&
+            mission.date_range_mission[1].value > week.startDate
         ) {
             return 1;
         }
-        else {
-            // la personne est en intercontrat
-            return 2;
-        }
     }
 
-    if (associate.Missions.length == 0) {
-        return 2;
-    }
+    // la personne est en intercontrat
+    return 2;
+}
 
-};
 // Génére la liste des semaines dans l'année passé en paramètre et de l'année +1 
 function generateWeekList(year) {
     const startDate = new Date(year, 0, 1); // Premier jour de l'année
     const endDate = new Date(year + 1, 11, 31); // Dernier jour de l'année
-
-    console.log(startDate)
-    console.log(endDate)
 
     const allWeeks = eachWeekOfInterval({
         start: startDate,
@@ -67,6 +58,7 @@ function generateWeekList(year) {
     });
     const weekList = allWeeks.map((date) => {
         const weekNumber = getISOWeek(date);
+
         const startDateOfWeek = startOfWeek(date, { weekStartsOn: 1 });
         const endDateOfWeek = endOfWeek(date, { weekStartsOn: 1 });
         return {
@@ -260,11 +252,19 @@ module.exports = {
                     let nbInterContrat = 0;
                     let nbInMission = 0;
                     let horsSII = 0;
+                    let currentWeek = false;
+
+                    const weekNumber = getISOWeek(parseISO(today()));
+                    if (weekNumber == week.weekNumber) {
+                        currentWeek = true;
+                    }
+
                     var week_info = {
                         weekNumber: 'S' + week.weekNumber,
                         nbInterContrat,
                         nbInMission,
                         horsSII,
+                        currentWeek,
                     };
 
                     pdc.forEach((associate) => {

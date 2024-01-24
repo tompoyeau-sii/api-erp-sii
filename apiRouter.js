@@ -51,7 +51,7 @@ exports.router = (function () {
   
   //mission routes
   apiRouter.route("/mission").post(missionController.create)
-  apiRouter.route("/mission/update/:id").post(missionController.update);
+  // apiRouter.route("/mission/update/:reference").post(missionController.update);
   apiRouter.route("/missions").get(missionController.findAll)
   apiRouter.route("/missions/ongoing").get(missionController.findAllOngoing)
 

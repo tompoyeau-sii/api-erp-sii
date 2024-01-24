@@ -151,8 +151,8 @@ module.exports = {
                                 collab.Missions.forEach((mission) => {
                                     // Si la mission commence avant et fini après le mois en cours
                                     if (
-                                        mission.start_date <= month.start_date &&
-                                        mission.end_date >= month.end_date
+                                        mission.date_range_mission[0].value <= month.start_date &&
+                                        mission.date_range_mission[1].value >= month.end_date
                                     ) {
                                         mission.TJMs.forEach((TJM) => {
                                             if (
@@ -175,8 +175,8 @@ module.exports = {
 
                                         //Si la mission commence pendant le mois en cours
                                     } else if (
-                                        mission.start_date >= month.start_date &&
-                                        mission.start_date < month.end_date
+                                        mission.date_range_mission[0].value >= month.start_date &&
+                                        mission.date_range_mission[0].value < month.end_date
                                     ) {
                                         mission.TJMs.forEach((TJM) => {
                                             if (
@@ -211,8 +211,8 @@ module.exports = {
 
                                         //Si la mission termine pendant le mois en cours
                                     } else if (
-                                        mission.end_date >= month.start_date &&
-                                        mission.end_date <= month.end_date
+                                        mission.date_range_mission[1].value >= month.start_date &&
+                                        mission.date_range_mission[1].value <= month.end_date
                                     ) {
                                         mission.TJMs.forEach((TJM) => {
                                             if (

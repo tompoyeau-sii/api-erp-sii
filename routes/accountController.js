@@ -9,18 +9,17 @@ const PASSWORD_REGEX = /^(?=.*\d).{8,16}$/
 module.exports = {
 
   //Création d'un account
-  //Création d'un account
   register: function (req, res) {
     const username = req.body.username;
     const password = req.body.password;
 
-    if (!EMAIL_REGEX.test(username)) {
-      return res.status(400).json({ 'error': "Mail incorrect" });
-    }
+    // if (!EMAIL_REGEX.test(username)) {
+    //   return res.status(400).json({ 'error': "Mail incorrect" });
+    // }
 
-    if (!PASSWORD_REGEX.test(password)) {
-      return res.status(400).json({ 'error': "Mot de passe incorrect" });
-    }
+    // if (!PASSWORD_REGEX.test(password)) {
+    //   return res.status(400).json({ 'error': "Mot de passe incorrect" });
+    // }
     models.Account.findOne({
       attributes: ["username"],
       where: { username: username },
@@ -48,7 +47,6 @@ module.exports = {
       .catch(function (err) {
         return res.status(500).json({ 'error': "unable to verify account" });
       });
-
   },
 
   // Login d'un account
@@ -58,9 +56,15 @@ module.exports = {
     var username = req.body.username;
     var password = req.body.password;
 
-    if (username == null || password == null) {
-      return res.status(400).json({ 'error': 'missing parameters' });
+    if (username == null) {
+      return res.status(400).json({ 'error': 'Il manque un username' });
     }
+      
+    if (password == null) {
+      return res.status(400).json({ 'error': 'Il manque un username' });
+    }
+
+
 
     asyncLib.waterfall([
       function (done) {

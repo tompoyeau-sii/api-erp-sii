@@ -58,6 +58,7 @@ module.exports = {
 
   findAll: function (req, res) {
     models.Customer.findAll({
+      order: [['label', 'ASC']],
       include: [
         {
           model: models.Project,
@@ -66,21 +67,6 @@ module.exports = {
             {
               model: models.Mission,
               foreignKey: 'project_id',
-              where:
-              {
-                [Op.and]: [
-                  {
-                    start_date: {
-                      [Op.lt]: today()
-                    }
-                  },
-                  {
-                    end_date: {
-                      [Op.gt]: today()
-                    }
-                  }
-                ]
-              },
               include: [
                 {
                   model: models.Imputation,
