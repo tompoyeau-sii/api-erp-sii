@@ -16,19 +16,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'mission_id',
         onDelete: 'CASCADE',
       });
-
-      models.Mission.hasMany(models.Imputation, {
-        foreignKey: 'mission_id',
-        onDelete: 'CASCADE',
-      });
     }
   }
   Mission.init({
     label: {
-      type: DataTypes.STRING,
-      allowNull: false, // Champ "label" ne peut pas être NULL
-    },
-    reference: {
       type: DataTypes.STRING,
       allowNull: false, // Champ "label" ne peut pas être NULL
     },
@@ -65,7 +56,8 @@ module.exports = (sequelize, DataTypes) => {
     //   type: DataTypes.DATEONLY,
     //   allowNull: false, // Champ "end_date" ne peut pas être NULL
     // },
-  }, {
+  },
+   {
     sequelize,
     modelName: 'Mission',
   });

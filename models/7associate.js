@@ -24,8 +24,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'associate_id',
         onDelete: 'CASCADE',
       })
-
+      
       models.Associate.hasMany(models.PRU, {
+        foreignKey: 'associate_id',
+        onDelete: 'CASCADE',
+      })
+
+      models.Associate.hasMany(models.Timeline, {
         foreignKey: 'associate_id',
         onDelete: 'CASCADE',
       })

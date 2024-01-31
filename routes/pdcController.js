@@ -277,7 +277,7 @@ module.exports = {
                             horsSII++;
                         }
                     });
- 
+
                     week_info.nbInterContrat = nbInterContrat;
                     week_info.nbInMission = nbInMission;
                     week_info.horsSII = horsSII;
@@ -291,4 +291,38 @@ module.exports = {
 
             }).catch((error) => console.error(error));
     },
+    getPdcYear: function (req, res) {
+        models.Pdc.findOne().then((pdc) => {
+            return res.status(201).json({
+                pdc,
+            });
+        }).catch((err) => {
+            console.error(err)
+            return res.status(400).json({ error: "Erreur lors de la modification de l'année." });
+        })
+    },
+    updatePDCYear: function (req, res) {
+        const year = parseInt(req.body.year);
+        models.Pdc.findOne().then((pdc) =>{
+            if(pdc) {
+                pdc.update({
+                    actual_year: year
+                }).then((newYear) => {
+                    return res.status(201).json({ message: "Modification de l'année réussi." });
+                }).catch((err) => {
+                    console.error(err)
+                    return res.status(400).json({ error: "Erreur lors de la modification de l'année." });
+                })
+            } else {
+                models.Pdc.create({
+                    actual_year: year
+                }).then((newYear) => {
+                    return res.status(201).json({ message: "Modification de l'année réussi." });
+                }).catch((err) => {
+                    console.error(err)
+                    return res.status(400).json({ error: "Erreur lors de la modification de l'année." });
+                })
+            }
+        })
+    }
 };

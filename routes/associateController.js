@@ -284,7 +284,7 @@ module.exports = {
     },
     findManager: function (req, res) {
         models.Job.findAll({
-            where: { id: 1 },
+            where: { label: "Manager" },
             include:
             {
                 model: models.Associate,
@@ -319,10 +319,6 @@ module.exports = {
                                             },
                                             {
                                                 model: models.TJM,
-                                                foreignKey: 'mission_id'
-                                            },
-                                            {
-                                                model: models.Imputation,
                                                 foreignKey: 'mission_id'
                                             },
                                         ]
@@ -398,10 +394,6 @@ module.exports = {
                         {
                             model: models.TJM,
                             foreignKey: 'mission_id'
-                        },
-                        {
-                            model: models.Imputation,
-                            foreignKey: 'mission_id'
                         }
                     ]
                 },
@@ -457,19 +449,19 @@ module.exports = {
                 const mail = req.body.mail || associate.mail;
                 const end_date = req.body.end_date || associate.end_date;
                 const manager_id = req.body.manager_id;
-                if (
-                    name == null
-                    || first_name == null
-                    || birthdate == null
-                    || mail == null
-                    || start_date == null
-                    || graduation_id == null
-                    || job_id == null
-                    || gender_id == null
-                    || pru == null
-                    || manager_id == null
-                ) {
-                    return res.status(400).json({ error: "Paramètres manquants" });
+                if (name == null ||
+                    first_name == null ||
+                    birthdate == null ||
+                    mail == null ||
+                    start_date == null ||
+                    graduation_id == null ||
+                    gender_id == null ||
+                    pru == null) {
+                    return res.status(400).json({ error: "Paramètre(s) manquant(s)" });
+                }
+
+                if (job_id != 1 && manager_id == null) {
+                    return res.status(400).json({ error: "Seul les collaborateurs ayant le poste manager peuvent ne pas avoir de manager." });
                 }
                 return associate.update({
                     name: name,
@@ -517,12 +509,14 @@ module.exports = {
                         }).then(function (lastManager) {
                             //on vérifie qu'il y en a bien un sinon on en créer un
                             if (lastManager != null) {
-                                // On vérifie que le job est bien différent du précédant
+                                // On vérifie que le manager est bien différent du précédent
                                 if (lastManager.manager_id != manager_id) {
                                     //On vérifie que le collaborateur à commencé à travailler
                                     if (updateAssociate.start_date < today()) {
                                         // On change la date de fin du précédent par celle aujourd'hui
-                                        lastManager.update({ end_date: today() })
+                                        const today2 = new Date(); 
+                                        lastManager.update({ end_date: today2 })
+                                        console.log(today2)
                                         // On créer la nouvelle association entre un job et un collab
                                         models.Associate_Manager.create({
                                             associate_id: updateAssociate.id,
@@ -543,14 +537,6 @@ module.exports = {
                                         )
                                     }
                                 }
-                            } else {
-                                models.Associate_Manager.create({
-                                    associate_id: updateAssociate.id,
-                                    manager_id: manager_id,
-                                    start_date: today(),
-                                    end_date: '9999-12-31 23:59:59'
-                                }
-                                )
                             }
                         })
                         console.log(updateAssociate.id)

@@ -69,10 +69,6 @@ module.exports = {
               foreignKey: 'project_id',
               include: [
                 {
-                  model: models.Imputation,
-                  foreignKey: "mission_id"
-                },
-                {
                   model: models.TJM,
                   foreignKey: "mission_id"
                 },
@@ -118,10 +114,6 @@ module.exports = {
                 model: models.Mission,
                 foreignKey: 'project_id',
                 include: [
-                  {
-                    model: models.Imputation,
-                    foreignKey: "mission_id"
-                  },
                   {
                     model: models.TJM,
                     foreignKey: "mission_id"

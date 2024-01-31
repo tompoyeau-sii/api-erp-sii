@@ -51,12 +51,14 @@ exports.router = (function () {
   
   //mission routes
   apiRouter.route("/mission").post(missionController.create)
-  // apiRouter.route("/mission/update/:reference").post(missionController.update);
+  apiRouter.route("/mission/update/:id").post(missionController.update);
   apiRouter.route("/missions").get(missionController.findAll)
   apiRouter.route("/missions/ongoing").get(missionController.findAllOngoing)
 
   //pdc routes
   apiRouter.route("/pdc").get(pdcController.createPDC)
+  apiRouter.route("/pdc/year").get(pdcController.getPdcYear)
+  apiRouter.route("/pdc/year").post(pdcController.updatePDCYear);
   
   //pdc routes
   apiRouter.route("/test").get(testController.test)
@@ -65,6 +67,7 @@ exports.router = (function () {
   apiRouter.route("/statistiques/manager").get(statController.calculateStatsManager)
   apiRouter.route("/statistiques/agence").get(statController.calculateStatsAgence)
   apiRouter.route("/statistiques/customer").get(statController.calculateStatsCustomer)
+  apiRouter.route("/statistiques/customer/actualMonth").get(statController.calculateStatsCustomerActualMonth)
 
   return apiRouter;
 })();

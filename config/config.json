@@ -1,10 +1,10 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "erp-sii",
-    "host": "127.0.0.1",
-    "dialect": "mysql"
+    "username": "postgres",
+    "password": "root",
+    "database": "picsou",
+    "host": "localhost",
+    "dialect": "postgresql"
   },
   "test": {
     "username": "postgres",
