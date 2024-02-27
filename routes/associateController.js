@@ -17,17 +17,8 @@ function today() {
     // Concaténer les composants dans le format souhaité
     return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
 }
-// Créer une nouvelle instance de l'objet Date
-function hour() {
-    var date = new Date();
-    var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
-    var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
-    var secondes = ('0' + date.getSeconds()).slice(-2);
-    return heuresActuel = heures + ':' + minutes + ':' + secondes;
-}
 
 module.exports = {
-    //Creation of an associate
     create: function (req, res) {
         const name = req.body.name;
         const first_name = req.body.first_name;
@@ -49,9 +40,9 @@ module.exports = {
             gender_id == null ||
             pru == null) {
             return res.status(400).json({ error: "Paramètres manquants" });
-        } 
+        }
 
-        if(job_id != 1 && manager_id == null) {
+        if (job_id != 1 && manager_id == null) {
             return res.status(400).json({ error: "Seul les collaborateurs ayant le poste manager peuvent ne pas avoir de manager." });
         }
 
@@ -338,6 +329,7 @@ module.exports = {
     // Récupérer un client par son identifiant
     findById: function (req, res) {
         const associateId = req.params.id;
+        const currentDate = new Date(); // Obtenez la date actuelle
 
         models.Associate.findOne({
             where: { id: associateId },
@@ -347,24 +339,24 @@ module.exports = {
                     foreignKey: "graduation_id",
                 },
                 {
-                    model: models.Associate, // Utilisez le modèle Associate ici
-                    as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                    model: models.Associate,
+                    as: 'managers',
                     through: {
                         where: {
                             [Op.and]: [
                                 {
                                     start_date: {
-                                        [Op.lt]: today()
+                                        [Op.lt]: currentDate
                                     }
                                 },
                                 {
                                     end_date: {
-                                        [Op.gt]: today()
+                                        [Op.gt]: currentDate
                                     }
                                 }
                             ]
                         },
-                        attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                        attributes: ['start_date', 'end_date'],
                     },
                 },
                 {
@@ -382,7 +374,6 @@ module.exports = {
                         {
                             model: models.Project,
                             foreignKey: "project_id",
-                            // limit: 1,
                             include: [
                                 {
                                     model: models.Customer,
@@ -393,7 +384,22 @@ module.exports = {
                         },
                         {
                             model: models.TJM,
-                            foreignKey: 'mission_id'
+                            foreignKey: 'mission_id',
+                            where: {
+                                [Op.and]: [
+                                    {
+                                        start_date: {
+                                            [Op.lt]: currentDate
+                                        }
+                                    },
+                                    {
+                                        end_date: {
+                                            [Op.gt]: currentDate
+                                        }
+                                    }
+                                ]
+                            },
+                            required: false // Permet de récupérer toutes les missions même si elles n'ont pas de TJM correspondant aux critères de date
                         }
                     ]
                 },
@@ -411,6 +417,7 @@ module.exports = {
                 return res.status(500).json({ error: "unable to fetch associate" });
             });
     },
+
     findByName: function (req, res) {
         const associateName = req.params.name;
 
@@ -514,7 +521,7 @@ module.exports = {
                                     //On vérifie que le collaborateur à commencé à travailler
                                     if (updateAssociate.start_date < today()) {
                                         // On change la date de fin du précédent par celle aujourd'hui
-                                        const today2 = new Date(); 
+                                        const today2 = new Date();
                                         lastManager.update({ end_date: today2 })
                                         console.log(today2)
                                         // On créer la nouvelle association entre un job et un collab
@@ -582,5 +589,5 @@ module.exports = {
                 console.log(err);
                 return res.status(500).json({ error: "unable to fetch associate" });
             });
-    }
+    },
 };

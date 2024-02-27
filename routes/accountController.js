@@ -63,9 +63,6 @@ module.exports = {
     if (password == null) {
       return res.status(400).json({ 'error': 'Il manque un username' });
     }
-
-
-
     asyncLib.waterfall([
       function (done) {
         models.Account.findOne({

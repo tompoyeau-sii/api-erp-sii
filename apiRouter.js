@@ -1,4 +1,6 @@
 const express = require("express");
+const { verifyToken } = require("./utils/jwt.utils");
+
 const accountController = require("./routes/accountController");
 const associateController = require("./routes/associateController");
 const customerController = require("./routes/customerController");
@@ -10,14 +12,18 @@ const missionController = require("./routes/missionController");
 const pdcController = require("./routes/pdcController");
 const testController = require("./routes/testController");
 const statController = require("./routes/statController");
+const environmentController = require("./routes/environmentController");
 
 exports.router = (function () {
   const apiRouter = express.Router();
 
   //Account routes
-  apiRouter.route("/register/").post(accountController.register);
   apiRouter.route("/login/").post(accountController.login);
 
+  apiRouter.use(verifyToken);
+  
+  apiRouter.route("/register/").post(accountController.register);
+  
   //Customer routes
   apiRouter.route("/customer").post(customerController.create);
   apiRouter.route("/customers").get(customerController.findAll);
@@ -53,7 +59,6 @@ exports.router = (function () {
   apiRouter.route("/mission").post(missionController.create)
   apiRouter.route("/mission/update/:id").post(missionController.update);
   apiRouter.route("/missions").get(missionController.findAll)
-  apiRouter.route("/missions/ongoing").get(missionController.findAllOngoing)
 
   //pdc routes
   apiRouter.route("/pdc").get(pdcController.createPDC)
@@ -68,6 +73,9 @@ exports.router = (function () {
   apiRouter.route("/statistiques/agence").get(statController.calculateStatsAgence)
   apiRouter.route("/statistiques/customer").get(statController.calculateStatsCustomer)
   apiRouter.route("/statistiques/customer/actualMonth").get(statController.calculateStatsCustomerActualMonth)
+  
+  //environment routes
+  apiRouter.route("/simulation").put(environmentController.changeEnvironment)
 
   return apiRouter;
 })();

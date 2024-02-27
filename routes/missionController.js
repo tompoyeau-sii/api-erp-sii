@@ -111,7 +111,7 @@ module.exports = {
 
         // Vérification si les paramètres sont bien complets
         if (!label || !associate_id || !project_id || !tjm || !start_date || !end_date) {
-            return res.status(400).json({ error: "Paramètres manquants" });
+            return res.status(400).json({ error: "Veuillez complétez tous les champs." });
         }
 
         // On vérifie que la date de début n'est pas après la date de fin
@@ -220,59 +220,16 @@ module.exports = {
             })
             .catch((error) => console.error(error));
     },
-    findAllOngoing: function (req, res) {
-        models.Mission.findAll({
-            where: {
-                [Op.and]: [
-                    {
-                        start_date: {
-                            [Op.lt]: today()
-                        }
-                    },
-                    {
-                        end_date: {
-                            [Op.gt]: today()
-                        }
-                    }
-                ]
-            },
-            include: [
-                {
-                    model: models.TJM,
-                    foreignKey: "mission_id"
-                },
-                {
-                    model: models.Project,
-                    foreignKey: "project_id",
-                },
-                {
-                    model: models.Associate,
-                    foreignKey: "associate_id",
-                    include: [
-                        {
-                            model: models.PRU,
-                            foreignKey: 'associate_id'
-                        },
-                        {
-                            model: models.associatemanager,
-                            foreignKey: 'associate_id'
-                        },
-                    ]
-                }
-            ],
-        })
-            .then((mission) => {
-                return res.status(201).json({
-                    mission,
-                });
-            })
-            .catch((error) => console.error(error));
-    },
     update: async function (req, res) {
         const mission_id = req.params.id;
         const tjm_value = req.body.tjm; // tjm de la mission
+        const tjm_start_date = req.body.tjm_start_date
         const start_date = req.body.start_date; // date de début de la nouvelle mission
         const end_date = req.body.end_date;
+
+        if(!mission_id || !tjm_value || !start_date || !end_date) {
+            return res.status(500).json({ error: "Remplissez tous les champs." });
+        }
 
         try {
             // Recherche de la mission existante
@@ -287,8 +244,6 @@ module.exports = {
                 },
                 order: [['createdAt', 'DESC']]
             });
-
-
 
             // Si la mission existe déjà, mettre à jour les champs fournis dans la requête
             if (mission) {
@@ -333,7 +288,6 @@ module.exports = {
                         return res.status(500).json({ error: "Erreur lors de la modification de la date de fin de la mission." });
                     })
 
-
                     if (tjm_value == LastTJM.value) {
                         await models.TJM.update({
                             end_date: end_date,
@@ -351,13 +305,19 @@ module.exports = {
 
                 // Si le TJM a été fourni, mettre à jour le TJM associé à la mission
                 if (tjm_value != LastTJM.value) {
-                    // Obtenir la date actuelle
-                    const currentDate = new Date();
-                    // Formater la date actuelle en "YYYY-MM-DD"
-                    const formattedDate = format(currentDate, 'yyyy-MM-dd');
+                    let tjm_start;
+                    if (tjm_start_date) {
+                        tjm_start = tjm_start_date
+                    } else {
+                        // Obtenir la date actuelle
+                        const currentDate = new Date();
+                        // Formater la date actuelle en "YYYY-MM-DD"
+                        tjm_start = format(currentDate, 'yyyy-MM-dd');
+                    }
+
 
                     await models.TJM.update({
-                        end_date: formattedDate
+                        end_date: tjm_start
                     }, {
                         where: {
                             mission_id: mission.id,
@@ -367,7 +327,7 @@ module.exports = {
                     }).then((tjm) => {
                         models.TJM.create({
                             mission_id: mission_id,
-                            start_date: formattedDate,
+                            start_date: tjm_start,
                             end_date: end_date,
                             value: tjm_value
                         }).catch((error) => {

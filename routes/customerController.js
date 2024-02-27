@@ -154,7 +154,11 @@ module.exports = {
     const customerId = req.params.id; // ID du customer à modifier
     const label = req.body.label; // Nouvelle valeur pour le champ "label"
     if (!customerId || !label) {
-      return res.status(400).json({ error: "missing parameters" });
+      return res.status(400).json({ error: "Veuillez remplir le libelle de l'entreprise" });
+    }
+
+    if(label.length <= 2) {
+      return res.status(400).json({ error: "Le libelle du client doit faire plus de 2 caractères." });
     }
 
     models.Customer.findOne({
