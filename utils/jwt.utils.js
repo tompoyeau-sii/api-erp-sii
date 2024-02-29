@@ -16,10 +16,12 @@ function generateTokenForAccount(accountData) {
 }
 
 function verifyToken(req, res, next) {
-  const token = req.headers["authorization"];
-  if (!token) {
+  const authorizationHeader = req.headers.authorization;
+  if (!authorizationHeader) {
     return res.status(401).json({ error: "Votre token de connexion est manquant." });
   }
+
+  const token = authorizationHeader.split(" ")[1];
 
   jwt.verify(token, JWT_SIGN_SECRET, (err, decoded) => {
     if (err) {

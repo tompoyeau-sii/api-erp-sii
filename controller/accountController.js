@@ -98,7 +98,8 @@ module.exports = {
           'token': jwtUtils.generateTokenForAccount(accountFound)
         });
       } else {
-        return res.status(500).json({ 'error': 'cannot log on account' });
+        return res.status(500).json({
+          'error': "Impossible de se connecter. Si le problème persiste, contactez l'administrateur." });
       }
     });
   },

@@ -1,71 +1,20 @@
-import config from "./index";
-
-const { secrets, dbVariables } = config();
-
 module.exports = {
-    development: {
-        username: secrets.username,
-        password: secrets.password,
-        database: secrets.name,
-        host: secrets.host,
-        port: secrets.port,
-        dialect: "postgres",
-        dialectOptions: {
-            bigNumberStrings: true,
-        },
-        databases: {
-            Prod: {
-                username: dbVariables.dbCustomerUsername,
-                password: dbVariables.dbCustomerPassword,
-                database: dbVariables.dbCustomerName,
-                host: dbVariables.dbCustomerHost,
-                port: 5432,
-                dialect: "postgres",
-                dialectOptions: {
-                    bigNumberStrings: true,
-                },
+    "development": {
+        "databases": {
+            "production": {
+                "database": "picsou", //you should always save these values in environment variables
+                "username": "postgres",  //only for testing purposes you can also define the values here
+                "password": "root",
+                "host": "localhost",
+                "dialect": "postgres"  //here you need to define the dialect of your databse, in my case it is Postgres
             },
-            Simulation: {
-                username: dbVariables.dbAuthUsername,
-                password: dbVariables.dbAuthPassword,
-                database: dbVariables.dbAuthName,
-                host: dbVariables.dbAuthHost,
-                port: 5432,
-                dialect: "postgres",
-                dialectOptions: {
-                    bigNumberStrings: true,
-                },
+            "simulation": {
+                "database": "picsou-simulation",
+                "username": "postgres",
+                "password": "root",
+                "host": "localhost",
+                "dialect": "postgres"
             },
         }
     }
 }
-// {
-//   "development": {
-//     "username": "postgres",
-//     "password": "root",
-//     "database": "picsou",
-//     "host": "localhost",
-//     "dialect": "postgresql"
-//   },
-//   "test": {
-//     "username": "postgres",
-//     "password": "root",
-//     "database": "picsou",
-//     "host": "localhost",
-//     "dialect": "postgresql"
-//   },
-//   "simulation": {
-//     "username": "postgres",
-//     "password": "root",
-//     "database": "picsou-simulation",
-//     "host": "localhost",
-//     "dialect": "postgresql"
-//   },
-//   "production": {
-//     "username": "root",
-//     "password": null,
-//     "database": "erp-sii",
-//     "host": "127.0.0.1",
-//     "dialect": "mysql"
-//   }
-// }
