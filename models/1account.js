@@ -7,6 +7,14 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Account.init({
+    first_name: {
+      type: DataTypes.STRING,
+      allowNull: false, // Champ "username" ne peut pas être NULL
+    },
+    name: {
+      type: DataTypes.STRING,
+      allowNull: false, // Champ "username" ne peut pas être NULL
+    },
     username: {
       type: DataTypes.STRING,
       allowNull: false, // Champ "username" ne peut pas être NULL
@@ -19,6 +27,5 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Account',
   });
-  Account.sync();
   return Account;
 };
