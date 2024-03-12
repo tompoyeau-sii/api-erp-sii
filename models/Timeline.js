@@ -27,6 +27,5 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'Timeline',
     });
-    Timeline.sync();
     return Timeline;
 };

@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     // Synchronisation du modèle avec la base de données
-    Associate_Manager.sync();
+
 
     return Associate_Manager;
 };

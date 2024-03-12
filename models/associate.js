@@ -94,6 +94,5 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Associate',
   });
-  Associate.sync();
   return Associate;
 };

@@ -12,6 +12,5 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'Pdc',
     });
-    Pdc.sync();
     return Pdc;
 };
