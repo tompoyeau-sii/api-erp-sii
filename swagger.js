@@ -10,7 +10,7 @@ const options = {
         },
     },
     // Path to the API docs
-    apis: ['./apiRouter.js'], // Remplacez par le chemin vers vos fichiers de route
+    apis: ['./routes/production/productionRouter.js'], // Remplacez par le chemin vers vos fichiers de route
 };
 
 const swaggerSpec = swaggerJSDoc(options);

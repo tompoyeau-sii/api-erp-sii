@@ -4,11 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "sequelize:production:migrate": "sequelize --options-path ./.sequelize-production --env production db:migrate",
-    "sequelize:production:migrate:undo": "sequelize --options-path ./.sequelize-production --env production db:migrate:undo",
-    "sequelize:simulation:migrate": "sequelize --options-path ./.sequelize-simulation --env simulation db:migrate",
-    "sequelize:simulation:migrate:undo": "sequelize --options-path ./.sequelize-simulation --env simulation db:migrate:undo"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",

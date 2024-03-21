@@ -2,23 +2,23 @@
   "development": {
     "username": "postgres",
     "password": "root",
-    "database": "picsou",
+    "database": "picsou-pettazzoni",
     "host": "localhost",
-    "dialect": "postgresql"
+    "dialect": "postgres"
   },
   "test": {
     "username": "postgres",
     "password": "root",
     "database": "picsou",
     "host": "localhost",
-    "dialect": "postgresql"
+    "dialect": "mysql"
   },
   "simulation": {
     "username": "postgres",
     "password": "root",
     "database": "picsou-simulation",
     "host": "localhost",
-    "dialect": "postgresql"
+    "dialect": "mysql"
   },
   "production": {
     "username": "root",

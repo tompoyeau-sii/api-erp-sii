@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const apiRouter = require("./apiRouter").router;
+const apiRouterProduction = require("./routes/production/productionRouter").router;
+const apiRouterPettazzoni = require("./routes/pettazzoni/pettazzoniRouter").router;
+const apiRouterGourmel = require("./routes/gourmel/gourmelRouter").router;
 const cors = require('cors');
 const port = 8080;
 const server = express();
@@ -20,7 +22,9 @@ server.get("/", function (req, res) {
   res.status(200).send("Server online");
 });
 
-server.use("/api/", apiRouter);
+server.use("/api/production", apiRouterProduction);
+server.use("/api/pettazzoni", apiRouterPettazzoni);
+server.use("/api/gourmel", apiRouterGourmel);
 
 server.listen(port, function () {
   console.log("Le server écoute sur http://localhost:" + port + "/api-docs");
