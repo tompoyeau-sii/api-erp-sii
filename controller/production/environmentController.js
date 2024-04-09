@@ -263,52 +263,106 @@ module.exports = {
             return res.status(400).json({ error: 'ID utilisateur non fourni dans la requête.' });
         }
 
+        const page = req.query.page ? parseInt(req.query.page) : 1; // Récupérer le numéro de la page depuis la requête
+        const pageSize = 5; // Nombre de fichiers par page
+
         db.Account.findOne({
             where: {
                 id: userId
             }
         }).then(user => {
             const username = user.first_name + "." + user.name;
-            const directoryPath = path.join(__dirname, '..', '..', 'saveBDD', `${username}`); // Chemin du répertoire saveBDD
-
+            const directoryPath = path.join(__dirname, '..', '..', 'saveBDD', `${username.toLowerCase()}`); // Chemin du répertoire saveBDD
             fs.readdir(directoryPath, function (err, files) {
-                const fileData = [];
-
-                // Vérifier si files est un tableau et s'il contient des éléments
-                if (!Array.isArray(files) || files.length === 0) {
-                    return res.json({ userId: userId, files: fileData }); // Aucun fichier trouvé, renvoyer une réponse vide
-                }
-
+                // Gérer les erreurs liées à la lecture du répertoire
                 if (err) {
                     return res.status(500).json({ error: 'Erreur lors de la lecture du répertoire.' });
                 }
 
-                files.forEach(file => {
+                const totalFiles = files.length;
+                const totalPages = Math.ceil(totalFiles / pageSize);
+                const startIndex = (page - 1) * pageSize;
+                const endIndex = Math.min(startIndex + pageSize, totalFiles);
+
+                const fileData = [];
+                // Boucler à travers les fichiers du répertoire
+                for (let i = startIndex; i < endIndex; i++) {
+                    const file = files[i];
                     const filePath = path.join(directoryPath, file);
-                    fs.stat(filePath, (err, stats) => {
-                        if (err) {
-                            return res.status(500).json({ error: 'Erreur lors de la récupération des informations sur le fichier.' });
-                        }
+                    const stats = fs.statSync(filePath);
+                    const fileInfo = path.parse(file);
+                    const fileNameWithoutExtension = fileInfo.name;
+                    const formattedCreationDate = format(stats.birthtime, 'dd/MM/yyyy HH:mm');
 
-                        const fileInfo = path.parse(file);
-                        const fileNameWithoutExtension = fileInfo.name;
-                        const formattedCreationDate = format(stats.birthtime, 'dd/MM/yyyy HH:mm');
-
-                        fileData.push({
-                            name: fileNameWithoutExtension,
-                            created_at: formattedCreationDate // Date de création du fichier formatée
-                        });
-
-                        if (fileData.length === files.length) {
-                            res.json({ userId: userId, files: fileData });
-                        }
+                    fileData.push({
+                        name: fileNameWithoutExtension,
+                        created_at: formattedCreationDate // Date de création du fichier formatée
                     });
+                }
+
+                // Trier les fichiers par date de création, du plus récent au plus ancien
+                fileData.sort((a, b) => {
+                    const dateA = new Date(a.created_at);
+                    const dateB = new Date(b.created_at);
+                    if (dateA > dateB) return -1;
+                    if (dateA < dateB) return 1;
+                    return 0;
+                });
+
+                
+                // Envoyer les données de la page actuelle
+                res.json({
+                    userId: userId,
+                    files: fileData,
+                    currentPage: page,
+                    totalPages: totalPages
                 });
             });
         }).catch(err => {
-            console.log(err)
+            console.log(err);
             res.status(500).json({ error: 'Erreur lors de la recherche de l\'utilisateur dans la base de données.' });
         });
-    }
+    },
+    DeleteSave: function (req, res) {
+        const userId = req.body.userId;
+        const fileName = req.body.fileName; // Assurez-vous que le titre du fichier est envoyé dans le corps de la requête
 
+        db.Account.findOne({
+            where: {
+                id: userId
+            }
+        }).then(user => {
+            if (!user) {
+                return res.status(404).json({ message: "Utilisateur non trouvé." });
+            }
+
+            const username = user.first_name + "." + user.name;
+
+            if (!fileName) {
+                return res.status(400).json({ message: "Le titre du fichier est requis." });
+            }
+
+            // Nom du fichier de sauvegarde basé sur le titre
+            const nomFichierSauvegarde = path.join(__dirname, '..', '..', 'saveBDD', `${username}`, `${fileName}.sql`);
+
+            // Vérifier si le fichier existe
+            if (!fs.existsSync(nomFichierSauvegarde)) {
+                return res.status(404).json({ message: "Fichier de sauvegarde non trouvé." });
+            }
+
+            // Supprimer le fichier
+            fs.unlink(nomFichierSauvegarde, (err) => {
+                if (err) {
+                    console.error(`Erreur lors de la suppression du fichier : ${err}`);
+                    return res.status(500).json({ message: "Erreur lors de la suppression du fichier." });
+                }
+
+                console.log(`Fichier ${nomFichierSauvegarde} supprimé avec succès.`);
+                res.status(200).json({ message: `Fichier ${fileName} supprimé avec succès.` });
+            });
+        }).catch(err => {
+            console.log(err);
+            return res.status(500).json({ error: "Erreur lors de la récupération de l'identifiant du compte" });
+        });
+    }
 };

@@ -444,6 +444,7 @@ exports.router = (function () {
   apiRouter.route("/simulation/LoadSave").post(environmentController.LoadSave)
   apiRouter.route("/simulation/LoadSaveFromOtherUser").post(environmentController.LoadSaveFromOtherUser)
   apiRouter.route("/simulation/GetFiles/:id").get(environmentController.GetFiles)
+  apiRouter.route("/simulation/DeleteSave").post(environmentController.DeleteSave)
 
   
 
