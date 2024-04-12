@@ -26,16 +26,17 @@ module.exports = (sequelize, DataTypes) => {
             primaryKey: true
         },
         start_date: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
             primaryKey: true
         },
         end_date: {
-            type: DataTypes.DATE,
+            type: DataTypes.DATEONLY,
         }
     }, {
         sequelize,
         modelName: 'Associate_Manager',
         primaryKey: ['associate_id', 'manager_id', 'start_date']
     });
+
     return Associate_Manager;
 };

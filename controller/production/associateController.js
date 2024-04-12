@@ -1,22 +1,15 @@
 const db = require("../../models").production.models;
 const { Op } = require("sequelize");
+const { format, addDays } = require('date-fns');
 
-function today() {
-    var date = new Date();
-
-    // Obtenir les composants de la date
-    var annee = date.getFullYear(); // Année à 4 chiffres
-    var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
-    var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
-
-    // Obtenir les composants de l'heure
-    var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
-    var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
-    var secondes = ('0' + date.getSeconds()).slice(-2); // Secondes (ajoute un zéro devant si nécessaire)
-
-    // Concaténer les composants dans le format souhaité
-    return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
+function today(offset = 0) {
+    let date = new Date();
+    if (offset !== 0) {
+        date = addDays(date, offset);
+    }
+    return format(date, 'yyyy-MM-dd');
 }
+
 
 module.exports = {
     create: function (req, res) {
@@ -69,7 +62,7 @@ module.exports = {
                         newAssociate.addJob(job_id, {
                             through: {
                                 start_date: start_date,
-                                end_date: '9999-12-31 23:59:59',
+                                end_date: '9999-12-31',
                             },
                         })
                             // Créez un PRU
@@ -85,7 +78,7 @@ module.exports = {
                                         newAssociate.addManagers(manager_id, {
                                             through: {
                                                 start_date: start_date,
-                                                end_date: '9999-12-31 23:59:59',
+                                                end_date: '9999-12-31',
                                             }.then(manager => {
                                                 return res.status(201).json({
                                                     associateId: newAssociate.id,
@@ -117,7 +110,6 @@ module.exports = {
                 console.log(err);
                 return res.status(500).json({ error: "Erreur lors de la récupération des collaborateurs" });
             })
-
     },
     findAllWithLimit: function (req, res) {
         const page = req.query.page || 1; // Récupère le numéro de la page depuis la requête (par défaut : 1)
@@ -198,7 +190,7 @@ module.exports = {
                     offset,
                 })
                     .then((result) => {
-                        const {count, rows} = result;
+                        const { count, rows } = result;
                         const totalPages = Math.ceil(nbAssociates / limit);
                         return res.status(201).json({
                             associate: rows,
@@ -292,7 +284,6 @@ module.exports = {
                 return res.status(500).json({ error: "Erreur lors de la récupération des collaborateurs" });
             })
     },
-
     findManager: function (req, res) {
         db.Job.findAll({
             where: { label: "Manager" },
@@ -348,7 +339,6 @@ module.exports = {
             return res.status(500).json({ error: "Erreur lors de la récupération des managers" });
         })
     },
-    // Récupérer un client par son identifiant
     findById: function (req, res) {
         const associateId = req.params.id;
         const currentDate = new Date(); // Obtenez la date actuelle
@@ -438,6 +428,63 @@ module.exports = {
                 return res.status(500).json({ error: "Erreur lors de la récupération de l'associé" });
             });
     },
+    findByIdAllData: function (req, res) {
+        const associateId = req.params.id;
+
+        db.Associate.findOne({
+            where: { id: associateId },
+            include: [
+                {
+                    model: db.Graduation,
+                    foreignKey: "graduation_id",
+                },
+                {
+                    model: db.Associate,
+                    as: 'managers',
+                },
+                {
+                    model: db.PRU,
+                    foreignKey: "associate_id",
+                },
+                {
+                    model: db.Job,
+                    foreignKey: "job_id",
+                },
+                {
+                    model: db.Mission,
+                    foreignKey: "associate_id",
+                    include: [
+                        {
+                            model: db.Project,
+                            foreignKey: "project_id",
+                            include: [
+                                {
+                                    model: db.Customer,
+                                    foreignKey: 'customer_id',
+                                    duplicating: false
+                                },
+                            ]
+                        },
+                        {
+                            model: db.TJM,
+                            foreignKey: 'mission_id',
+                            required: false // Permet de récupérer toutes les missions même si elles n'ont pas de TJM correspondant aux critères de date
+                        }
+                    ]
+                },
+            ]
+        })
+            .then(associate => {
+                if (!associate) {
+                    return res.status(404).json({ error: "Aucun collaborateur trouvé" });
+                }
+                return res.status(200).json(associate);
+            })
+            .catch(err => {
+                console.error(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération de l'associé" });
+            });
+    },
     update: function (req, res) {
         const associateId = req.params.id;
         db.Associate.findOne({
@@ -497,16 +544,16 @@ module.exports = {
                                     //On vérifie que le collaborateur à commencé à travailler
                                     if (updateAssociate.start_date < today()) {
                                         // On change la date de fin du précédent par celle aujourd'hui
-                                        lastJob.update({ end_date: today() })
+                                        lastJob.update({ end_date: today(-1) })
                                         // On créer la nouvelle association entre un job et un collab
-                                        updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
+                                        updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31' } })
                                     } else {
                                         lastJob.destroy()
-                                        updateAssociate.addJob(job_id, { through: { start_date: updateAssociate.start_date, end_date: '9999-12-31 23:59:59' } })
+                                        updateAssociate.addJob(job_id, { through: { start_date: updateAssociate.start_date, end_date: '9999-12-31' } })
                                     }
                                 }
                             } else {
-                                updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31 23:59:59' } })
+                                updateAssociate.addJob(job_id, { through: { start_date: today(), end_date: '9999-12-31' } })
                             }
                         })
                         db.Associate_Manager.findOne({
@@ -523,15 +570,13 @@ module.exports = {
                                     //On vérifie que le collaborateur à commencé à travailler
                                     if (updateAssociate.start_date < today()) {
                                         // On change la date de fin du précédent par celle aujourd'hui
-                                        const today2 = new Date();
-                                        lastManager.update({ end_date: today2 })
-                                        console.log(today2)
+                                        lastManager.update({ end_date: today(-1) })
                                         // On créer la nouvelle association entre un job et un collab
                                         db.Associate_Manager.create({
                                             associate_id: updateAssociate.id,
                                             manager_id: manager_id,
                                             start_date: today(),
-                                            end_date: '9999-12-31 23:59:59'
+                                            end_date: '9999-12-31'
                                         }
                                         )
                                     } else {
@@ -541,7 +586,7 @@ module.exports = {
                                             associate_id: updateAssociate.id,
                                             manager_id: manager_id,
                                             start_date: updateAssociate.start_date,
-                                            end_date: '9999-12-31 23:59:59'
+                                            end_date: '9999-12-31'
                                         }
                                         )
                                     }
@@ -551,7 +596,7 @@ module.exports = {
                         console.log(updateAssociate.id)
                         // on récupére le dernier PRU créer pour ce collaborateur
                         db.PRU.findOne({
-                            where: { associate_id: updateAssociate.id },
+                            where: { end_date: '9999-12-31' },
                             order: [
                                 ['updatedAt', 'DESC'],
                             ],
@@ -561,7 +606,7 @@ module.exports = {
                             if (lastPru != null && lastPru.value != pru) {
                                 if (updateAssociate.start_date < today()) {
                                     //on modifie la date de fin du précédent PRU en mettant la date du jour comme fin
-                                    lastPru.update({ end_date: today() });
+                                    lastPru.update({ end_date: today(-1) });
                                     //on créer un nouveau PRU avec les nouvelles valeurs commençant à la date du jour
                                     db.PRU.create({
                                         associate_id: updateAssociate.id,

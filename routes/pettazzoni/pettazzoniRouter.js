@@ -28,6 +28,7 @@ exports.router = (function () {
   apiRouter.route("/associate").post(associateController.create)
   apiRouter.route("/associates").get(associateController.findAllWithLimit)
   apiRouter.route("/associate/:id").get(associateController.findById);
+  apiRouter.route("/associate/:id/all").get(associateController.findByIdAllData);
   apiRouter.route("/associate/update/:id").put(associateController.update);
   apiRouter.route("/associates/managers").get(associateController.findManager);
   apiRouter.route("/associates/all").get(associateController.findAll);

@@ -7,7 +7,8 @@ const {
     getYear,
     getMonth,
     eachDayOfInterval,
-    isWeekend
+    isWeekend,
+    parseISO
 } = require("date-fns");
 const { Op } = require("sequelize");
 const { fr } = require("date-fns/locale");
@@ -29,8 +30,6 @@ function getWorkingDaysInMonth(year, month) {
 function generateMonthList(year) {
     const list_start = startOfMonth(new Date(year, 3, 1));
     const list_end = startOfMonth(new Date(year + 1, 2, 1));
-    console.log(list_start);
-    console.log(list_end);
     const monthsList = eachMonthOfInterval({
         start: list_start,
         end: list_end,
@@ -47,8 +46,6 @@ function generateMonthList(year) {
             getMonth(startDateOfMonth)
         );
 
-        // console.log(format(startDateOfMonth, "yyyy-MM-dd") + ' : ' + nbDay)
-
         return {
             monthNumber: month,
             start_date: format(startDateOfMonth, "yyyy-MM-dd"),
@@ -56,7 +53,6 @@ function generateMonthList(year) {
             nb_day: nbDay,
         };
     });
-    // console.log(allMonths)
     return allMonths;
 }
 
@@ -64,21 +60,12 @@ function todayYYMMAAAA() {
     return format(new Date(), "yyyy-MM-dd");
 }
 
-function today() {
-    var date = new Date();
-
-    // Obtenir les composants de la date
-    var annee = date.getFullYear(); // Année à 4 chiffres
-    var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
-    var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
-
-    // Obtenir les composants de l'heure
-    var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
-    var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
-    var secondes = ('0' + date.getSeconds()).slice(-2); // Secondes (ajoute un zéro devant si nécessaire)
-
-    // Concaténer les composants dans le format souhaité
-    return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
+function today(offset = 0) {
+    let date = new Date();
+    if (offset !== 0) {
+        date = addDays(date, offset);
+    }
+    return format(date, 'yyyy-MM-dd');
 }
 
 module.exports = {
@@ -148,8 +135,8 @@ module.exports = {
                             let marge = 0;
                             manager.PRUs.forEach((PRU) => {
                                 if (
-                                    format(PRU.start_date, "yyyy-MM-dd") <= month.end_date && // Vérifie si la date de début du PRU est antérieure ou égale à la date de fin du mois
-                                    format(PRU.end_date, "yyyy-MM-dd") >= month.start_date // Vérifie si la date de fin du PRU est postérieure ou égale à la date de début du mois
+                                    format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.end_date && // Vérifie si la date de début du PRU est antérieure ou égale à la date de fin du mois
+                                    format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date // Vérifie si la date de fin du PRU est postérieure ou égale à la date de début du mois
                                 ) {
                                     value -= PRU.value * month.nb_day;
                                     marge -= PRU.value * month.nb_day;
@@ -174,8 +161,8 @@ module.exports = {
 
                                         mission.Associate.PRUs.forEach((PRU) => {
                                             if (
-                                                format(PRU.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                                format(PRU.end_date, "yyyy-MM-dd") >= month.end_date
+                                                format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
                                                 value -= PRU.value * month.nb_day;
                                                 marge -= PRU.value * month.nb_day;
@@ -204,14 +191,14 @@ module.exports = {
                                         });
                                         mission.Associate.PRUs.forEach((PRU) => {
                                             if (
-                                                format(PRU.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                                format(PRU.end_date, "yyyy-MM-dd") >= month.end_date
+                                                format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
                                                 value -= PRU.value * month.nb_day;
                                                 marge -= PRU.value * month.nb_day;
                                             } else if (
-                                                format(PRU.start_date, "yyyy-MM-dd") >= month.start_date &&
-                                                format(PRU.start_date, "yyyy-MM-dd") < month.end_date
+                                                format(parseISO(PRU.start_date), "yyyy-MM-dd") >= month.start_date &&
+                                                format(parseISO(PRU.start_date), "yyyy-MM-dd") < month.end_date
                                             ) {
                                                 value -= PRU.value * month.nb_day;
                                                 marge -= PRU.value * month.nb_day;
@@ -240,14 +227,14 @@ module.exports = {
                                         });
                                         mission.Associate.PRUs.forEach((PRU) => {
                                             if (
-                                                format(PRU.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                                format(PRU.end_date, "yyyy-MM-dd") >= month.end_date
+                                                format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
                                                 value -= PRU.value * month.nb_day;
                                                 marge -= PRU.value * month.nb_day;
                                             } else if (
-                                                format(PRU.end_date, "yyyy-MM-dd") >= month.start_date &&
-                                                format(PRU.end_date, "yyyy-MM-dd") < month.end_date
+                                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date &&
+                                                format(parseISO(PRU.end_date), "yyyy-MM-dd") < month.end_date
                                             ) {
                                                 value -= PRU.value * month.nb_day;
                                                 marge -= PRU.value * month.nb_day;
@@ -320,7 +307,6 @@ module.exports = {
         })
             .then((associate) => {
                 const year = parseInt(req.query.year);
-                console.log("calculateStatsAgence");
                 const months = generateMonthList(year)
                 let ca = 0;
                 caForMonths = [];
@@ -328,19 +314,19 @@ module.exports = {
                     associate.forEach((associate) => {
                         associate.PRUs.forEach((PRU) => {
                             if (
-                                format(PRU.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                format(PRU.end_date, "yyyy-MM-dd") >= month.end_date
+                                format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                             ) {
 
                                 ca -= PRU.value * month.nb_day;
                             } else if (
-                                format(PRU.start_date, "yyyy-MM-dd") >= month.start_date &&
-                                format(PRU.start_date, "yyyy-MM-dd") <= month.end_date
+                                format(parseISO(PRU.start_date), "yyyy-MM-dd") >= month.start_date &&
+                                format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.end_date
                             ) {
                                 ca -= PRU.value * month.nb_day;
                             } else if (
-                                format(PRU.end_date, "yyyy-MM-dd") >= month.start_date &&
-                                format(PRU.end_date, "yyyy-MM-dd") <= month.end_date
+                                format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date &&
+                                format(parseISO(PRU.end_date), "yyyy-MM-dd") <= month.end_date
                             ) {
                                 ca -= PRU.value * month.nb_day;
                             }
@@ -425,7 +411,6 @@ module.exports = {
                 let ca = 0;
                 let caOfCustomer = [];
                 const year = parseInt(req.query.year);
-                console.log("calculateStatsCustomer");
                 const months = generateMonthList(year)
                 months.forEach((month) => {
                     customer.Projects.forEach((project) => {
@@ -445,8 +430,8 @@ module.exports = {
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
                                     if (
-                                        format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                        format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                        format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                        format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
                                         ca -= pru.value * month.nb_day;
                                     }
@@ -471,13 +456,13 @@ module.exports = {
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
                                     if (
-                                        format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                        format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                        format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                        format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
                                         ca -= pru.value * month.nb_day;
                                     } else if (
-                                        format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
-                                        format(pru.end_date, "yyyy-MM-dd") < month.end_date
+                                        format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
+                                        format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                     ) {
                                         ca -= pru.value * month.nb_day;
                                     }
@@ -502,13 +487,13 @@ module.exports = {
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
                                     if (
-                                        format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                        format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                        format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                        format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
                                         ca -= pru.value * month.nb_day;
                                     } else if (
-                                        format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
-                                        format(pru.end_date, "yyyy-MM-dd") < month.end_date
+                                        format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
+                                        format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                     ) {
                                         ca -= pru.value * month.nb_day;
                                     }
@@ -533,7 +518,7 @@ module.exports = {
         if (!req.query.year) {
             return res.status(400).json({ 'error': "L'année est manquante" });
         }
-        
+
         db.Customer.findAll({
             include: [
                 {
@@ -595,8 +580,8 @@ module.exports = {
                                     });
                                     mission.Associate.PRUs.forEach((pru) => {
                                         if (
-                                            format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                            format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                            format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                            format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                         ) {
                                             ca -= pru.value * month.nb_day;
                                         }
@@ -652,13 +637,13 @@ module.exports = {
                                     });
                                     mission.Associate.PRUs.forEach((pru) => {
                                         if (
-                                            format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
-                                            format(pru.end_date, "yyyy-MM-dd") >= month.end_date
+                                            format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
+                                            format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                         ) {
                                             ca -= pru.value * month.nb_day;
                                         } else if (
-                                            format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
-                                            format(pru.end_date, "yyyy-MM-dd") < month.end_date
+                                            format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
+                                            format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                         ) {
                                             ca -= pru.value * month.nb_day;
                                         }

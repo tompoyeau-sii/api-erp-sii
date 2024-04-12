@@ -416,6 +416,63 @@ module.exports = {
                 return res.status(500).json({ error: "unable to fetch associate" });
             });
     },
+    findByIdAllData: function (req, res) {
+        const associateId = req.params.id;
+
+        db.Associate.findOne({
+            where: { id: associateId },
+            include: [
+                {
+                    model: db.Graduation,
+                    foreignKey: "graduation_id",
+                },
+                {
+                    model: db.Associate,
+                    as: 'managers',
+                },
+                {
+                    model: db.PRU,
+                    foreignKey: "associate_id",
+                },
+                {
+                    model: db.Job,
+                    foreignKey: "job_id",
+                },
+                {
+                    model: db.Mission,
+                    foreignKey: "associate_id",
+                    include: [
+                        {
+                            model: db.Project,
+                            foreignKey: "project_id",
+                            include: [
+                                {
+                                    model: db.Customer,
+                                    foreignKey: 'customer_id',
+                                    duplicating: false
+                                },
+                            ]
+                        },
+                        {
+                            model: db.TJM,
+                            foreignKey: 'mission_id',
+                            required: false // Permet de récupérer toutes les missions même si elles n'ont pas de TJM correspondant aux critères de date
+                        }
+                    ]
+                },
+            ]
+        })
+            .then(associate => {
+                if (!associate) {
+                    return res.status(404).json({ error: "Aucun collaborateur trouvé" });
+                }
+                return res.status(200).json(associate);
+            })
+            .catch(err => {
+                console.error(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération de l'associé" });
+            });
+    },
 
     findByName: function (req, res) {
         const associateName = req.params.name;

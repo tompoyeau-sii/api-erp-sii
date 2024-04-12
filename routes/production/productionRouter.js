@@ -12,6 +12,7 @@ const missionController = require("../../controller/production/missionController
 const pdcController = require("../../controller/production/pdcController");
 const statController = require("../../controller/production/statController");
 const environmentController = require("../../controller/production/environmentController");
+const pruController = require("../../controller/production/pruController");
 
 exports.router = (function () {
   const apiRouter = express.Router();
@@ -108,7 +109,7 @@ exports.router = (function () {
   apiRouter.route("/register/").post(accountController.register);
   //Les routes qui suivent ont besoins d'un token pour être appelé
   apiRouter.use(verifyToken);
-  
+
   apiRouter.route("/accounts").get(accountController.findAll);
   //Associate routes
   /**
@@ -212,6 +213,7 @@ exports.router = (function () {
  *         description: Erreur interne du serveur
  */
   apiRouter.route("/associate/:id").get(associateController.findById);
+  apiRouter.route("/associate/:id/all").get(associateController.findByIdAllData);
   /**
  * @swagger
  * /api/production/associate/{id}:
@@ -446,7 +448,7 @@ exports.router = (function () {
   apiRouter.route("/simulation/GetFiles/:id").get(environmentController.GetFiles)
   apiRouter.route("/simulation/DeleteSave").post(environmentController.DeleteSave)
 
-  
+
 
   //Gender routes
   /**
@@ -855,6 +857,46 @@ exports.router = (function () {
  *         description: Erreur interne du serveur
  */
   apiRouter.route("/projects").get(projectController.findAll)
+
+  //pru routes
+  /**
+* @swagger
+* tags:
+*   name: PRU
+*   description: Routes pour la gestion des PRU
+*/
+  /**
+   * @swagger
+   * /api/production/pru:
+   *   put:
+   *     summary: Mettre à jour un pru
+   *     tags: [Project]
+   *     security:
+   *       - JWTAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               pruId:
+   *                 type: integer
+   *               pruValue:
+   *                 type: integer
+   *               pruStart:
+   *                 type: date
+   *               pruEnd:
+   *                 type: date
+   *     responses:
+  *       '201':
+  *         description: PRU mise à jour avec succès
+  *       '400':
+  *         description: Requête invalide
+  *       '500':
+  *         description: Erreur interne du serveur
+   */
+  apiRouter.route("/pru/update/:id").put(pruController.update)
 
   //statistiques routes
   /**

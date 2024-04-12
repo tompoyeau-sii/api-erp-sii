@@ -5,21 +5,12 @@ const {
     format, addDays, isWeekend
 } = require("date-fns");
 
-function today() {
-    var date = new Date();
-
-    // Obtenir les composants de la date
-    var annee = date.getFullYear(); // Année à 4 chiffres
-    var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
-    var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
-
-    // Obtenir les composants de l'heure
-    var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
-    var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
-    var secondes = ('0' + date.getSeconds()).slice(-2); // Secondes (ajoute un zéro devant si nécessaire)
-
-    // Concaténer les composants dans le format souhaité
-    return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
+function today(offset = 0) {
+    let date = new Date();
+    if (offset !== 0) {
+        date = addDays(date, offset);
+    }
+    return format(date, 'yyyy-MM-dd');
 }
 
 // Fonction pour créer la timeline
