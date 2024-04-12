@@ -10,6 +10,8 @@ module.exports = {
         db.Graduation.findOne({
             attributes: ["label"],
             where: { label: label },
+            order: [["label", "ASC"]]
+
         })
             .then(graduationFound => {
                 if (!graduationFound) {
@@ -31,12 +33,13 @@ module.exports = {
             })
             .catch(err => {
                 console.log(err);
-                return res.status(500).json({ error: "Erreur lors de la récupération des genres" });
+                return res.status(500).json({ error: "Erreur lors de la récupération des diplômes" });
             });
     },
     findAll: function (req, res) {
         db.Graduation.findAll({
             attributes: ["id", "label"],
+            order: [["label", "ASC"]]
         })
             .then((graduation) => {
                 return res.status(201).json({
@@ -45,7 +48,24 @@ module.exports = {
             })
             .catch((err) =>  {
                 console.error(err);
-                return res.status(500).json({ error: "Erreur lors de la récupération des genres" });
+                return res.status(500).json({ error: "Erreur lors de la récupération des diplômes" });
+
+            })
+    },
+    findAllLimit5: function (req, res) {
+        db.Graduation.findAll({
+            attributes: ["id", "label"],
+            order: [["label", "ASC"]],
+            limit: 5
+        })
+            .then((graduation) => {
+                return res.status(201).json({
+                    graduation,
+                });
+            })
+            .catch((err) =>  {
+                console.error(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération des diplômes" });
 
             })
     },

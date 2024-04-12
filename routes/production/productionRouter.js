@@ -554,6 +554,7 @@ exports.router = (function () {
  *         description: Erreur interne du serveur
  */
   apiRouter.route("/jobs").get(jobController.findAll)
+  apiRouter.route("/jobs/limit").get(jobController.findAllLimit5)
 
 
   //graduation routes
@@ -606,6 +607,7 @@ exports.router = (function () {
  *         description: Erreur interne du serveur
  */
   apiRouter.route("/graduations").get(graduationController.findAll)
+  apiRouter.route("/graduations/limit").get(graduationController.findAllLimit5)
 
 
   //mission routes

@@ -31,32 +31,32 @@ for (let i = 0; i < databases.length; ++i) {
   );
 }
 
-fs
-  .readdirSync(__dirname + '/pettazzoni/')
-  .filter(file =>
-    (file.indexOf('.') !== 0) &&
-    (file !== basename) &&
-    (file.slice(-3) === '.js'))
-  .forEach(file => {
-    const model = require(path.join(__dirname + '/pettazzoni', file))(db.pettazzoni, Sequelize);
-    db[model.name] = model;
+// fs
+//   .readdirSync(__dirname + '/pettazzoni/')
+//   .filter(file =>
+//     (file.indexOf('.') !== 0) &&
+//     (file !== basename) &&
+//     (file.slice(-3) === '.js'))
+//   .forEach(file => {
+//     const model = require(path.join(__dirname + '/pettazzoni', file))(db.pettazzoni, Sequelize);
+//     db[model.name] = model;
 
-  });
-db.pettazzoni.sync()
-syncDb();
+//   });
+// db.pettazzoni.sync()
+// syncDb();
 
-fs
-  .readdirSync(__dirname + '/gourmel/')
-  .filter(file =>
-    (file.indexOf('.') !== 0) &&
-    (file !== basename) &&
-    (file.slice(-3) === '.js'))
-  .forEach(file => {
-    const model = require(path.join(__dirname + '/gourmel', file))(db.gourmel, Sequelize);
-    db[model.name] = model;
-  });
-db.gourmel.sync()
-syncDb();
+// fs
+//   .readdirSync(__dirname + '/gourmel/')
+//   .filter(file =>
+//     (file.indexOf('.') !== 0) &&
+//     (file !== basename) &&
+//     (file.slice(-3) === '.js'))
+//   .forEach(file => {
+//     const model = require(path.join(__dirname + '/gourmel', file))(db.gourmel, Sequelize);
+//     db[model.name] = model;
+//   });
+// db.gourmel.sync()
+// syncDb();
 
 fs
   .readdirSync(__dirname + '/production/')

@@ -38,6 +38,23 @@ module.exports = {
     findAll: function (req, res) {
         db.Job.findAll({
             attributes: ["id", "label"],
+            order: [["label", "ASC"]]
+        })
+            .then((job) => {
+                return res.status(201).json({
+                    job,
+                });
+            })
+            .catch((err) => {
+                console.error(err)
+                return res.status(500).json({ error: "Erreur server lors de la récupération des postes" });
+            })
+    },
+    findAllLimit5: function (req, res) {
+        db.Job.findAll({
+            limit: 5,
+            attributes: ["id", "label"],
+            order: [["label", "ASC"]]
         })
             .then((job) => {
                 return res.status(201).json({
