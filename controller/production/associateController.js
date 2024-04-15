@@ -45,71 +45,63 @@ module.exports = {
         db.Associate.findOne({
             attributes: ["mail"],
             where: { mail: mail },
-        })
-            .then(associateFound => {
-                if (!associateFound) {
-                    // try {
-                    db.Associate.create({
-                        first_name: first_name,
-                        name: name,
-                        gender_id: gender_id,
-                        graduation_id: graduation_id,
-                        birthdate: birthdate,
-                        mail: mail,
-                        start_date: start_date,
-                    }).then(newAssociate => {
-                        // Ajoutez le job avec les dates 
-                        newAssociate.addJob(job_id, {
-                            through: {
-                                start_date: start_date,
-                                end_date: '9999-12-31',
-                            },
-                        })
-                            // Créez un PRU
-                            .then(jobAdded => {
-                                db.PRU.create({
-                                    associate_id: newAssociate.id,
+        }).then(associateFound => {
+            if (!associateFound) {
+                db.Associate.create({
+                    first_name: first_name,
+                    name: name,
+                    gender_id: gender_id,
+                    graduation_id: graduation_id,
+                    birthdate: birthdate,
+                    mail: mail,
+                    start_date: start_date,
+                }).then(newAssociate => {
+                    // Ajoutez le job avec les dates 
+                    newAssociate.addJob(job_id, {
+                        through: {
+                            start_date: start_date,
+                            end_date: '9999-12-31',
+                        },
+                    }).then(jobAdded => {
+                        db.PRU.create({
+                            associate_id: newAssociate.id,
+                            start_date: start_date,
+                            end_date: '9999-12-31',
+                            value: pru,
+                        }).then(pru => {
+                            // Ajoutez le manager avec les dates
+                            newAssociate.addManagers(manager_id, {
+                                through: {
                                     start_date: start_date,
                                     end_date: '9999-12-31',
-                                    value: pru,
-                                })
-                                    .then(pru => {
-                                        // Ajoutez le manager avec les dates
-                                        newAssociate.addManagers(manager_id, {
-                                            through: {
-                                                start_date: start_date,
-                                                end_date: '9999-12-31',
-                                            }.then(manager => {
-                                                return res.status(201).json({
-                                                    associateId: newAssociate.id,
-                                                });
-                                            })
-                                        }).catch(err => {
-                                            console.log(err)
-                                            return res.status(500).json({ error: "Erreur lors de la création de l'association Manager - Collaborateur" });
-                                        })
-                                    }).catch(err => {
-                                        console.log(err)
-                                        return res.status(500).json({ error: "Erreur lors de la création du PRU du collaborateur" });
-                                    })
+                                },
+                            }).then(manager => {
+                                return res.status(201).json({
+                                    associateId: newAssociate.id,
+                                });
                             }).catch(err => {
                                 console.log(err)
-                                return res.status(500).json({ error: "Erreur lors de l'ajout du poste du collaborateur" });
+                                return res.status(500).json({ error: "Erreur lors de l'ajout du manager au collaborateur" });
                             })
+                        }).catch(err => {
+                            console.log(err)
+                            return res.status(500).json({ error: "Erreur lors de la création du PRU du collaborateur" });
+                        })
                     }).catch(err => {
                         console.log(err)
-                        return res.status(500).json({ error: "Erreur lors de la création du collaborateur" });
-                    }).catch(err => {
-                        console.log(err);
-                        return res.status(500).json({ error: "Erreur lors de la création du collaborateur" });
+                        return res.status(500).json({ error: "Erreur lors de l'ajout du poste du collaborateur" });
                     })
-                } else {
-                    return res.status(409).json({ error: "L'associé existe déjà" });
-                }
-            }).catch(err => {
-                console.log(err);
-                return res.status(500).json({ error: "Erreur lors de la récupération des collaborateurs" });
-            })
+                }).catch(err => {
+                    console.log(err)
+                    return res.status(500).json({ error: "Erreur lors de la création du collaborateur" });
+                })
+            } else {
+                return res.status(409).json({ error: "L'associé existe déjà" });
+            }
+        }).catch(err => {
+            console.log(err);
+            return res.status(500).json({ error: "Erreur lors de la récupération des collaborateurs" });
+        })
     },
     findAllWithLimit: function (req, res) {
         const page = req.query.page || 1; // Récupère le numéro de la page depuis la requête (par défaut : 1)
