@@ -30,14 +30,9 @@ async function createTimeline(startDate, endDate, missions, associate_id) {
         return res.status(500).json({ error: "Problème lors de la création de la timeline" });
     })
 
-    console.log('current : ' + currentDate)
-    console.log('end : ' + endDateObj)
-
     while (currentDate <= endDateObj) {
         const formattedDate = format(currentDate, 'yyyy-MM-dd');
         const imputation = calculateImputationPercentage(formattedDate, missions);
-
-
 
         // Si le pourcentage d'imputation est différent du précédent
         if (imputation != prevImputation) {

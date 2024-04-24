@@ -35,6 +35,11 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: 'CASCADE',
       })
 
+      models.Associate.hasMany(models.WorkedDays, {
+        foreignKey: 'associate_id',
+        onDelete: 'CASCADE',
+      })
+
       models.Associate.belongsToMany(models.Job, { 
         through: 'Associate_Job', 
         foreignKey: 'associate_id', 

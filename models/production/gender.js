@@ -13,7 +13,6 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       
       models.Gender.hasMany(models.Associate, {
-
         foreignKey: 'gender_id'
       })
     }
