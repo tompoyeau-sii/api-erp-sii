@@ -15,70 +15,89 @@ module.exports = {
     const name = req.body.name;
     const password = req.body.password;
 
+    // Vérifiaction que le format du mail est bien conformes aux attentes
     // if (!EMAIL_REGEX.test(username)) {
-    //   return res.status(400).json({ 'error': "Mail incorrect" });
+    //   return res.status(400).json({ 'error': "Mail inconforme" });
     // }
-
+    // Vérifiaction que le format du mot de passe est bien conformes aux attentes
     // if (!PASSWORD_REGEX.test(password)) {
-    //   return res.status(400).json({ 'error': "Mot de passe incorrect" });
+    //   return res.status(400).json({ 'error': "Mot de passe inconforme" });
     // }
+    // On recherche si cette adresse mail existe déjà 
     db.Account.findOne({
       attributes: ["username"],
       where: { username: username },
     })
-      .then(function (acccountFound) {
+      .then(acccountFound => {
+        // Si il n'existe pas alors on le créer en encryptant son mot de passe
         if (!acccountFound) {
           bcrypt.hash(password, 5, function (err, brcyptedPassword) {
-            const newAccount = db.Account.create({
+            db.Account.create({
               username: username,
               first_name: first_name,
               name: name,
               password: brcyptedPassword,
             })
-              .then(function (newAccount) {
+              .then(newAccount => {
                 return res.status(201).json({
                   accountId: newAccount.id,
                 });
               })
-              .catch(function (err) {
-                console.log(err)
-                return res.status(500).json({ 'error': "cannot add account" });
+              .catch(err => {
+                console.log(err);
+                return res.status(500).json({ 'error': "Erreur lors de l'ajout du nouveau compte" });
               });
           });
+          //Si le compte existe alors on renvoi un message d'erreur
         } else {
-          
-          return res.status(409).json({ 'error': "account already exist" });
+          return res.status(409).json({ 'error': "Un compte avec cet email existe déjà" });
         }
       })
-      .catch(function (err) {
-        console.log(err)
-        return res.status(500).json({ 'error': "unable to verify account" });
+      .catch(err => {
+        console.log(err);
+        return res.status(500).json({ 'error': "Erreur lors de la vérification du compte" });
       });
   },
 
   // Login d'un account
   login: function (req, res) {
 
+    console.log(db)
     // Params
     var username = req.body.username;
     var password = req.body.password;
+    
+    // //Vérifiaction que le format du mail est bien conformes aux attentes
+    // if (!EMAIL_REGEX.test(username)) {
+    //   return res.status(400).json({ 'error': "Mail inconforme" });
+    // }
+    // //Vérifiaction que le format du mot de passe est bien conformes aux attentes
+    // if (!PASSWORD_REGEX.test(password)) {
+    //   return res.status(400).json({ 'error': "Mot de passe incorrect" });
+    // }
 
+
+    //On vérifie que les champs sont bien complétés
     if (username == null) {
-      return res.status(400).json({ 'error': 'Il manque un username' });
+      return res.status(400).json({ 'error': 'Mail manquant' });
+    }
+      
+    if (password == null) {
+      return res.status(400).json({ 'error': 'Mot de passe manquant' });
     }
 
-    if (password == null) {
-      return res.status(400).json({ 'error': 'Il manque un username' });
-    }
+    
     asyncLib.waterfall([
       function (done) {
+        
         db.Account.findOne({
           where: { username: username }
         })
-          .then(function (accountFound) {
+          .then(accountFound => {
             done(null, accountFound);
           })
-          .catch(function (err) {
+          .catch(err => {
+            console.log(err)
             return res.status(500).json({ 'error': "Impossible de se connecter. Si le problème persiste, contactez l'administrateur." });
           });
       },
@@ -106,20 +125,34 @@ module.exports = {
           'token': jwtUtils.generateTokenForAccount(accountFound)
         });
       } else {
-        return res.status(500).json({ 'error': 'cannot log on account' });
+        return res.status(500).json({
+          'error': "Impossible de se connecter. Si le problème persiste, contactez l'administrateur." });
       }
     });
   },
-
   findAll: function (req, res) {
     db.Account.findAll({
-      attributes: ["id", "username"],
-    })
-      .then((account) => {
-        return res.status(201).json({
-          account,
-        });
-      })
-      .catch((error) => console.error(error));
-  },
+      attributes: ['id', 'name', 'first_name'],
+      order: [['name', 'ASC']],
+    }).then(accounts => {
+      // Transformation des données pour ajouter un attribut fullname
+      const modifiedAccounts = accounts.map(account => {
+        return {
+          id: account.id,
+          name: account.name,
+          first_name: account.first_name,
+          fullname: `${account.first_name} ${account.name}`
+        };
+      });
+
+      return res.status(200).json({
+        accounts: modifiedAccounts
+      });
+    }).catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: "Erreur lors de la récupération des comptes" });
+    });
+  }
+
+
 };

@@ -12,27 +12,27 @@ module.exports = {
             attributes: ["label"],
             where: { label: label },
         })
-            .then(function (genderFound) {
+            .then(genderFound => {
                 if (!genderFound) {
                     db.Gender.create({
                         label: label,
                     })
-                        .then(function (newGender) {
+                        .then(newGender => {
                             return res.status(201).json({
                                 genderId: newGender.id,
                             });
                         })
-                        .catch(function (err) {
+                        .catch(err => {
                             console.log(err)
-                            return res.status(500).json({ error: "cannot add job" });
+                            return res.status(500).json({ error: "Erreur lors de l'ajout du genre " });
                         });
                 } else {
-                    return res.status(409).json({ error: "job already exist" });
+                    return res.status(409).json({ error: "Ce genre existe déjà" });
                 }
             })
-            .catch(function (err) {
-                console.log(err)
-                return res.status(500).json({ error: "unable to verify account" });
+            .catch(err => {
+                console.log(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération des genres" });
             });
     },
     findAll: function (req, res) {
@@ -44,9 +44,9 @@ module.exports = {
                     gender,
                 });
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(err);
-                return res.status(500).json({ error: "unable to verify account" });
-            });
+                return res.status(500).json({ error: "Erreur lors de la récupération des genres" });
+            })
     },
 }

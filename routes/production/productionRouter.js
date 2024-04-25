@@ -13,6 +13,7 @@ const pdcController = require("../../controller/production/pdcController");
 const statController = require("../../controller/production/statController");
 const environmentController = require("../../controller/production/environmentController");
 const pruController = require("../../controller/production/pruController");
+const workeddaysController = require("../../controller/production/workeddaysController");
 
 exports.router = (function () {
   const apiRouter = express.Router();
@@ -306,6 +307,7 @@ exports.router = (function () {
  *         description: Erreur interne du serveur
  */
   apiRouter.route("/associates/all").get(associateController.findAll);
+  apiRouter.route("/associate/fire/:id").put(associateController.fire);
 
   //Customer routes
   /**
@@ -447,8 +449,6 @@ exports.router = (function () {
   apiRouter.route("/simulation/LoadSaveFromOtherUser").post(environmentController.LoadSaveFromOtherUser)
   apiRouter.route("/simulation/GetFiles/:id").get(environmentController.GetFiles)
   apiRouter.route("/simulation/DeleteSave").post(environmentController.DeleteSave)
-
-
 
   //Gender routes
   /**
@@ -760,7 +760,8 @@ exports.router = (function () {
    *       '500':
    *         description: Erreur interne du serveur
    */
-  apiRouter.route("/pdc").get(pdcController.createPDC)
+  apiRouter.route("/pdc/weeks").get(pdcController.createPDCByWeeks)
+  apiRouter.route("/pdc/months").get(pdcController.createPDCByMonths)
   /**
  * @swagger
  * /api/production/pdc/year:
@@ -1002,5 +1003,9 @@ exports.router = (function () {
     */
   apiRouter.route("/statistiques/customer/actualMonth").get(statController.calculateStatsCustomerActualMonth)
 
+
+  apiRouter.route("/workeddays").post(workeddaysController.create)
+  apiRouter.route("/workeddays/update").put(workeddaysController.update)
+  apiRouter.route("/workeddays/associates").get(workeddaysController.getAssociatesWorkedDaysByMonth)
   return apiRouter;
 })();

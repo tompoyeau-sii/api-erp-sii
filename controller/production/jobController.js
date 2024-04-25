@@ -38,6 +38,7 @@ module.exports = {
     findAll: function (req, res) {
         db.Job.findAll({
             attributes: ["id", "label"],
+            order: [["label", "ASC"]]
         })
             .then((job) => {
                 return res.status(201).json({

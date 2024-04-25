@@ -1,4 +1,4 @@
-const db = require("../../models").gourmel.models;
+const db = require("../../models").production.models;
 const bcrypt = require("bcrypt");
 const jwtUtils = require('../../utils/jwt.utils');
 var asyncLib = require('async')

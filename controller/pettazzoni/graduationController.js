@@ -5,43 +5,51 @@ module.exports = {
         if (
             label == null
         ) {
-            return res.status(400).json({ error: "Paramètres manquants" });
+            return res.status(400).json({ error: "Libellé manquant" });
         }
         db.Graduation.findOne({
             attributes: ["label"],
             where: { label: label },
+            order: [["label", "ASC"]]
+
         })
-            .then(function (graduationFound) {
+            .then(graduationFound => {
                 if (!graduationFound) {
                     db.Graduation.create({
                         label: label,
                     })
-                        .then(function (newGraduation) {
+                        .then(newGraduation => {
                             return res.status(201).json({
                                 graduationId: newGraduation.id,
                             });
                         })
-                        .catch(function (err) {
+                        .catch(err => {
                             console.log(err)
-                            return res.status(500).json({ error: "cannot add graduation" });
+                            return res.status(500).json({ error: "Erreur lors de l'ajout du diplôme" });
                         });
                 } else {
-                    return res.status(409).json({ error: "graduation already exist" });
+                    return res.status(409).json({ error: "Ce diplôme existe déjà" });
                 }
             })
-            .catch(function (err) {
-                return res.status(500).json({ error: "unable to verify account" });
+            .catch(err => {
+                console.log(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération des diplômes" });
             });
     },
     findAll: function (req, res) {
         db.Graduation.findAll({
             attributes: ["id", "label"],
+            order: [["label", "ASC"]]
         })
             .then((graduation) => {
                 return res.status(201).json({
                     graduation,
                 });
             })
-            .catch((error) => console.error(error));
+            .catch((err) => {
+                console.error(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération des diplômes" });
+
+            })
     },
 }

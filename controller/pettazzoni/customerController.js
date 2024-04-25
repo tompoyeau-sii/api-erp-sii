@@ -1,22 +1,20 @@
-const { groupBy } = require("async");
 const db = require("../../models").pettazzoni.models;
-const { Op } = require("sequelize");
+const {
+  startOfMonth,
+  endOfMonth,
+  eachMonthOfInterval,
+  format,
+  parseISO
+} = require("date-fns");
+const { fr } = require("date-fns/locale");
 
-function today() {
-  var date = new Date();
-
-  // Obtenir les composants de la date
-  var annee = date.getFullYear(); // Année à 4 chiffres
-  var mois = ('0' + (date.getMonth() + 1)).slice(-2); // Mois (ajoute un zéro devant si nécessaire)
-  var jour = ('0' + date.getDate()).slice(-2); // Jour (ajoute un zéro devant si nécessaire)
-
-  // Obtenir les composants de l'heure
-  var heures = ('0' + date.getHours()).slice(-2); // Heures (ajoute un zéro devant si nécessaire)
-  var minutes = ('0' + date.getMinutes()).slice(-2); // Minutes (ajoute un zéro devant si nécessaire)
-  var secondes = ('0' + date.getSeconds()).slice(-2); // Secondes (ajoute un zéro devant si nécessaire)
-
-  // Concaténer les composants dans le format souhaité
-  return datedujour = annee + '-' + mois + '-' + jour + ' ' + heures + ':' + minutes + ':' + secondes;
+function today(year) {
+  let date = new Date();
+  if (date >= new Date(year, 0, 1) && date < new Date(year, 3, 1)) {
+    year++; // Si la date est entre le 1er janvier et le 31 mars, l'année est N+1
+  }
+  date.setFullYear(year)
+  return format(date, 'yyyy-MM-dd');
 }
 
 module.exports = {
@@ -24,38 +22,41 @@ module.exports = {
   create: function (req, res) {
     const label = req.body.label;
 
+    //On vérifie que le champs du label soit bien complété
     if (label == null || label == "") {
-      return res.status(400).json({ error: "Paramètre manquant" });
+      return res.status(400).json({ error: "Libellé manquant" });
     }
-
+    //On recherche si le client existe déjà
     db.Customer.findOne({
       attributes: ["label"],
       where: { label: label },
     })
-      .then(function (customerFound) {
+      .then(customerFound => {
+        //Si il existe pas, alors on le créer
         if (!customerFound) {
-          const newCustomer = db.Customer.create({
+          db.Customer.create({
             label: label,
           })
-            .then(function (newCustomer) {
+            .then(newCustomer => {
               return res.status(201).json({
-                success: "Nouveau client créé.",
+                success: "Client " + newCustomer.label + " créé.",
               });
             })
-            .catch(function (err) {
-              console.log('error: cannot add customer');
-              return res.status(500).json({ error: "Ce client existe déjà" });
+            .catch(err => {
+              console.log(err)
+              return res.status(500).json({ error: "Erreur lors de la création du client" });
             });
+          // Si il existe alors on envoie un message d'erreur
         } else {
-          console.log('error: customer already exist');
           return res.status(409).json({ error: "Ce client existe déjà" });
         }
       })
-      .catch(function (err) {
-        return res.status(500).json({ error: "Problème imprévu, si il persiste, prévenez le technicien" });
+      .catch(err => {
+        console.log(err)
+        return res.status(500).json({ error: "Problème imprévu, si il persiste, prévenez un administrateur" });
       });
   },
-
+  //Retourne tous les clients ainsi que les infos liés
   findAll: function (req, res) {
     db.Customer.findAll({
       order: [['label', 'ASC']],
@@ -96,10 +97,15 @@ module.exports = {
           customer,
         });
       })
-      .catch((error) => console.error(error));
+      .catch((err) => {
+        console.error(err)
+        return res.status(500).json({ error: "Problème server lors de la récupération des clients" });
+      });
   },
+  //Retourne un client par son id
   findById: function (req, res) {
     const customerId = req.params.id;
+    const year = parseInt(req.query.year);
 
     db.Customer.findOne({
       where: { id: customerId },
@@ -107,7 +113,6 @@ module.exports = {
         {
           model: db.Project,
           foreignKey: "customer_id",
-          // limit: 1,
           include:
             [
               {
@@ -139,86 +144,93 @@ module.exports = {
     })
       .then((customer) => {
         if (!customer) {
-          return res.status(404).json({ error: "customer not found" });
+          return res.status(404).json({ error: "Aucun client trouvé" });
         }
+        let total_tjm = 0;
+        let total_pru = 0;
+        let boucle_tjm = 0;
+        let boucle_pru = 0;
+        customer.Projects.forEach((project) => {
+          project.Missions.forEach((mission) => {
+            if (
+              mission.date_range_mission[0].value <= today(year) &&
+              mission.date_range_mission[1].value >= today(year)
+            ) {
+              mission.TJMs.forEach((TJM) => {
+                if (
+                  TJM.start_date <= today(year) &&
+                  TJM.end_date >= today(year)
+                ) {
+                  total_tjm += TJM.value;
+                  boucle_tjm++;
+                }
+              });
+              mission.Associate.PRUs.forEach((pru) => {
+                if (
+                  format(parseISO(pru.start_date), "yyyy-MM-dd") <= today(year) &&
+                  format(parseISO(pru.end_date), "yyyy-MM-dd") >= today(year)
+                ) {
+                  total_pru += pru.value;
+                  boucle_pru++;
+                }
+              });
+            }
+          });
+        });
+        console.log(total_tjm)
+        console.log(boucle_tjm)
+        console.log(total_pru)
+        console.log(boucle_pru)
+        total_tjm = total_tjm / boucle_tjm;
+        total_pru = total_pru / boucle_pru;
 
-        return res.status(200).json(customer);
+        return res.status(200).json({ customer, total_tjm, total_pru });
       })
-      .catch((error) => {
-        console.error(error);
-        return res.status(500).json({ error: "unable to fetch customer" });
+      .catch((err) => {
+        console.error(err);
+        return res.status(500).json({ error: "Problème server lors de la récupération du client" });
       });
   },
-
+  //Mise à jour d'un client
   update: function (req, res) {
     const customerId = req.params.id; // ID du customer à modifier
     const label = req.body.label; // Nouvelle valeur pour le champ "label"
+
+    //Vérification que les champs sont bien complétés
     if (!customerId || !label) {
       return res.status(400).json({ error: "Veuillez remplir le libelle de l'entreprise" });
     }
 
-    if(label.length <= 2) {
+    //Le champ label soit faire plus de 2 caractères
+    if (label.length <= 2) {
       return res.status(400).json({ error: "Le libelle du client doit faire plus de 2 caractères." });
     }
-
+    //On recherche le client à mettre à jour
     db.Customer.findOne({
       where: { id: customerId },
     })
-      .then(function (customerFound) {
+      .then(customerFound => {
+        //Si le client n'est pas trouvé
         if (!customerFound) {
-          console.log('error: customer not found');
-          return res.status(404).json({ error: "customer not found" });
+          console.log('error: Aucun client trouvé');
+          return res.status(404).json({ error: "Aucun client trouvé" });
+          // Sinon on met à jour le label du client
         } else {
           customerFound.update({ label: label })
-            .then(function (updatedCustomer) {
+            .then(updatedCustomer => {
               return res.status(200).json({
-                customerId: updatedCustomer.id,
                 label: updatedCustomer.label,
               });
             })
-            .catch(function (err) {
-              console.log('error: cannot update customer');
-              return res.status(500).json({ error: "cannot update customer" });
+            .catch(err => {
+              console.log(err);
+              return res.status(500).json({ error: "Erreur lors de la mise à jour du client" });
             });
         }
       })
-      .catch(function (err) {
-        console.log('error: unable to verify account');
-        return res.status(500).json({ error: "unable to verify account" });
+      .catch(err => {
+        console.log(err);
+        return res.status(500).json({ error: "Erreur server lors de la récupération des données client" });
       });
   },
-
-  findByName: function (req, res) {
-    const customerLabel = req.params.label;
-
-    db.Customer.findOne({
-      where: { label: customerLabel },
-      include: [
-        {
-          model: db.Project,
-          foreignKey: "customer_id",
-          // limit: 1,
-          include:
-            [
-              {
-                model: db.Mission,
-                foreignKey: 'project_id',
-              }
-            ]
-        }
-      ]
-    })
-      .then((customer) => {
-        if (!customer) {
-          return res.status(404).json({ error: "customer not found" });
-        }
-
-        return res.status(200).json(customer);
-      })
-      .catch((error) => {
-        console.error(error);
-        return res.status(500).json({ error: "unable to fetch customer" });
-      });
-  },
-
 };

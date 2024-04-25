@@ -1,10 +1,11 @@
 const db = require("../../models").pettazzoni.models;
-
 module.exports = {
+    //Création d'un projet
     create: function (req, res) {
         const label = req.body.label;
         const adv = req.body.adv;
         const customer_id = req.body.customer_id;
+        //Vérification que les champs sont bien complétés
         if (
             label == null,
             adv == null,
@@ -12,11 +13,13 @@ module.exports = {
         ) {
             return res.status(400).json({ error: "Paramètres manquants" });
         }
+
         db.Project.findOne({
             attributes: ["label"],
             where: { label: label },
         })
             .then(function (projectFound) {
+                //Si un projet du même nom n'existe pas
                 if (!projectFound) {
                     db.Project.create({
                         label: label,
@@ -30,18 +33,20 @@ module.exports = {
                         })
                         .catch(function (err) {
                             console.log(err)
-                            return res.status(500).json({ error: "cannot add project" });
+                            return res.status(500).json({ error: "Erreur lors de l'ajout du projet" });
                         });
+                //Si il existe
                 } else {
-                    return res.status(409).json({ error: "project already exist" });
+                    return res.status(409).json({ error: "Ce projet existe déjà" });
                 }
             })
             .catch(function (err) {
-                return res.status(500).json({ error: "unable to verify account" });
+                console.log(err)
+                return res.status(500).json({ error: "Erreur lors de la récupération des projets" });
             });
     },
+    //Retourne les tous projets
     findAll: function (req, res) {
-
         db.Project.findAll({
             include: [
                 {
@@ -64,10 +69,10 @@ module.exports = {
                                 foreignKey: 'associate_id'
                             },
                             {
-                                model: db.Associate, // Utilisez le modèle Associate ici
-                                as: 'managers',          // Utilisez le nom de la relation défini dans le modèle Associate
+                                model: db.Associate,
+                                as: 'managers',
                                 through: {
-                                    attributes: ['start_date', 'end_date'], // Incluez les colonnes de la table de liaison
+                                    attributes: ['start_date', 'end_date'],
                                 },
                             },
                             ]
@@ -81,6 +86,9 @@ module.exports = {
                     project,
                 });
             })
-            .catch((error) => console.error(error));
+            .catch((err) => {
+                console.error(err);
+                return res.status(500).json({ error: "Erreur lors de la récupération des projets" });
+            })
     }
 }

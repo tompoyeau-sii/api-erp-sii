@@ -1,4 +1,21 @@
 const db = require("../../models").gourmel.models;
+const {
+  startOfMonth,
+  endOfMonth,
+  eachMonthOfInterval,
+  format,
+  parseISO
+} = require("date-fns");
+const { fr } = require("date-fns/locale");
+
+function today(year) {
+  let date = new Date();
+  if (date >= new Date(year, 0, 1) && date < new Date(year, 3, 1)) {
+    year++; // Si la date est entre le 1er janvier et le 31 mars, l'année est N+1
+  }
+  date.setFullYear(year)
+  return format(date, 'yyyy-MM-dd');
+}
 
 module.exports = {
   //Création d'un customer
@@ -14,14 +31,14 @@ module.exports = {
       attributes: ["label"],
       where: { label: label },
     })
-    .then(customerFound => {
+      .then(customerFound => {
         //Si il existe pas, alors on le créer
         if (!customerFound) {
           db.Customer.create({
             label: label,
           })
-          .then(newCustomer => {
-            return res.status(201).json({
+            .then(newCustomer => {
+              return res.status(201).json({
                 success: "Client " + newCustomer.label + " créé.",
               });
             })
@@ -29,7 +46,7 @@ module.exports = {
               console.log(err)
               return res.status(500).json({ error: "Erreur lors de la création du client" });
             });
-            // Si il existe alors on envoie un message d'erreur
+          // Si il existe alors on envoie un message d'erreur
         } else {
           return res.status(409).json({ error: "Ce client existe déjà" });
         }
@@ -88,6 +105,7 @@ module.exports = {
   //Retourne un client par son id
   findById: function (req, res) {
     const customerId = req.params.id;
+    const year = parseInt(req.query.year);
 
     db.Customer.findOne({
       where: { id: customerId },
@@ -128,8 +146,45 @@ module.exports = {
         if (!customer) {
           return res.status(404).json({ error: "Aucun client trouvé" });
         }
+        let total_tjm = 0;
+        let total_pru = 0;
+        let boucle_tjm = 0;
+        let boucle_pru = 0;
+        customer.Projects.forEach((project) => {
+          project.Missions.forEach((mission) => {
+            if (
+              mission.date_range_mission[0].value <= today(year) &&
+              mission.date_range_mission[1].value >= today(year)
+            ) {
+              mission.TJMs.forEach((TJM) => {
+                if (
+                  TJM.start_date <= today(year) &&
+                  TJM.end_date >= today(year)
+                ) {
+                  total_tjm += TJM.value;
+                  boucle_tjm++;
+                }
+              });
+              mission.Associate.PRUs.forEach((pru) => {
+                if (
+                  format(parseISO(pru.start_date), "yyyy-MM-dd") <= today(year) &&
+                  format(parseISO(pru.end_date), "yyyy-MM-dd") >= today(year)
+                ) {
+                  total_pru += pru.value;
+                  boucle_pru++;
+                }
+              });
+            }
+          });
+        });
+        console.log(total_tjm)
+        console.log(boucle_tjm)
+        console.log(total_pru)
+        console.log(boucle_pru)
+        total_tjm = total_tjm / boucle_tjm;
+        total_pru = total_pru / boucle_pru;
 
-        return res.status(200).json(customer);
+        return res.status(200).json({ customer, total_tjm, total_pru });
       })
       .catch((err) => {
         console.error(err);
@@ -147,7 +202,7 @@ module.exports = {
     }
 
     //Le champ label soit faire plus de 2 caractères
-    if(label.length <= 2) {
+    if (label.length <= 2) {
       return res.status(400).json({ error: "Le libelle du client doit faire plus de 2 caractères." });
     }
     //On recherche le client à mettre à jour

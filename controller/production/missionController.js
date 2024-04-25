@@ -2,7 +2,7 @@ const { forEach } = require("async");
 const db = require("../../models").production.models;
 const { Op } = require("sequelize");
 const {
-    format, addDays, isWeekend
+    format, addDays, isAfter, parseISO
 } = require("date-fns");
 
 function today(offset = 0) {
@@ -30,14 +30,9 @@ async function createTimeline(startDate, endDate, missions, associate_id) {
         return res.status(500).json({ error: "Problème lors de la création de la timeline" });
     })
 
-    console.log('current : ' + currentDate)
-    console.log('end : ' + endDateObj)
-
     while (currentDate <= endDateObj) {
         const formattedDate = format(currentDate, 'yyyy-MM-dd');
         const imputation = calculateImputationPercentage(formattedDate, missions);
-
-
 
         // Si le pourcentage d'imputation est différent du précédent
         if (imputation != prevImputation) {
@@ -101,13 +96,8 @@ module.exports = {
         const end_date = req.body.end_date; // date de fin de la nouvelle mission
 
         // Vérification si les paramètres sont bien complets
-        if (!label || !associate_id || !project_id || !tjm || !start_date || !end_date) {
+        if (!label || !associate_id || !project_id || !tjm || !start_date) {
             return res.status(400).json({ error: "Veuillez complétez tous les champs." });
-        }
-
-        // On vérifie que la date de début n'est pas après la date de fin
-        if (start_date > end_date) {
-            return res.status(400).json({ error: "La date de début doit être inférieure à la date de fin de mission" });
         }
 
         // On recherche le collaborateur
@@ -218,7 +208,7 @@ module.exports = {
         const start_date = req.body.start_date; // date de début de la nouvelle mission
         const end_date = req.body.end_date;
 
-        if(!mission_id || !tjm_value || !start_date || !end_date) {
+        if (!mission_id || !tjm_value || !start_date || !end_date) {
             return res.status(500).json({ error: "Remplissez tous les champs." });
         }
 
@@ -242,7 +232,7 @@ module.exports = {
                     mission = await mission.update({
                         date_range_mission: [
                             { value: start_date, inclusive: true },
-                            { value: mission.date_range_mission[1].value, inclusive: true },
+                            { value: mission.date_range_mission[1].value, inclusive: false },
                         ],
                     }).catch((error) => {
                         console.error(error)
@@ -251,20 +241,20 @@ module.exports = {
 
                     if (tjm_value == LastTJM.value) {
 
-                    db.TJM.findOne({
-                        where: {
-                            mission_id: mission.id,
-                        },
-                        order: [['createdAt', 'ASC']]
-                    }).then((firstTjm) => {
-                        firstTjm.update({
-                            start_date: start_date
+                        db.TJM.findOne({
+                            where: {
+                                mission_id: mission.id,
+                            },
+                            order: [['createdAt', 'ASC']]
+                        }).then((firstTjm) => {
+                            firstTjm.update({
+                                start_date: start_date
+                            })
                         })
-                    })
-                        .catch((error) => {
-                            console.error(error)
-                            return res.status(500).json({ error: "Erreur lors de la modification de la date de début du TJM." });
-                        })
+                            .catch((error) => {
+                                console.error(error)
+                                return res.status(500).json({ error: "Erreur lors de la modification de la date de début du TJM." });
+                            })
                     }
                 }
 
@@ -272,7 +262,7 @@ module.exports = {
                     mission = await mission.update({
                         date_range_mission: [
                             { value: mission.date_range_mission[0].value, inclusive: true },
-                            { value: end_date, inclusive: true },
+                            { value: end_date, inclusive: false },
                         ],
                     }).catch((error) => {
                         console.error(error)

@@ -4,34 +4,16 @@ const {
     endOfMonth,
     eachMonthOfInterval,
     format,
-    getYear,
-    getMonth,
-    eachDayOfInterval,
-    isWeekend,
     parseISO
 } = require("date-fns");
 const { Op } = require("sequelize");
 const { fr } = require("date-fns/locale");
 
-function getWorkingDaysInMonth(year, month) {
-    // Attendre que getOffDays ait fini son traitement avant de continuer
 
-    let startDate = new Date(year, month, 1);
-    let endDate = new Date(year, month + 1, 0);
-
-    const allDays = eachDayOfInterval({ start: startDate, end: endDate });
-    const workingDays = allDays.filter((day) => !isWeekend(day));
-
-    let nbJours = workingDays.length;
-
-    return nbJours;
-}
 //Génére la liste des mois de l'année passée en paramètre allant de S14 à S13
 function generateMonthList(year) {
     const list_start = startOfMonth(new Date(year, 3, 1));
     const list_end = startOfMonth(new Date(year + 1, 2, 1));
-    console.log(list_start);
-    console.log(list_end);
     const monthsList = eachMonthOfInterval({
         start: list_start,
         end: list_end,
@@ -43,33 +25,21 @@ function generateMonthList(year) {
         const startDateOfMonth = startOfMonth(date, { weekStartsOn: 1 });
         const endDateOfMonth = endOfMonth(date, { weekEndsOn: 1 });
 
-        let nbDay = getWorkingDaysInMonth(
-            getYear(startDateOfMonth),
-            getMonth(startDateOfMonth)
-        );
-
-        // console.log(format(startDateOfMonth, "yyyy-MM-dd") + ' : ' + nbDay)
-
         return {
             monthNumber: month,
             start_date: format(startDateOfMonth, "yyyy-MM-dd"),
             end_date: format(endDateOfMonth, "yyyy-MM-dd"),
-            nb_day: nbDay,
         };
     });
-    // console.log(allMonths)
     return allMonths;
 }
 
-function todayYYMMAAAA() {
-    return format(new Date(), "yyyy-MM-dd");
-}
-
-function today(offset = 0) {
+function today(year) {
     let date = new Date();
-    if (offset !== 0) {
-        date = addDays(date, offset);
+    if (date >= new Date(year, 0, 1) && date < new Date(year, 3, 1)) {
+        year++; // Si la date est entre le 1er janvier et le 31 mars, l'année est N+1
     }
+    date.setFullYear(year)
     return format(date, 'yyyy-MM-dd');
 }
 
@@ -90,6 +60,10 @@ module.exports = {
                             foreignKey: 'associate_id'
                         },
                         {
+                            model: db.WorkedDays,
+                            foreignKey: "associate_id"
+                        },
+                        {
                             model: db.Associate,
                             as: 'associates',
                             foreignKey: 'manager_id',
@@ -103,7 +77,10 @@ module.exports = {
                                         model: db.Timeline,
                                         foreignKey: 'associate_id',
                                     },
-
+                                    {
+                                        model: db.WorkedDays,
+                                        foreignKey: "associate_id"
+                                    },
                                     {
                                         model: db.Mission,
                                         foreignKey: 'project_id',
@@ -138,16 +115,30 @@ module.exports = {
                     if (manager.id == manager_id) {
                         months.forEach((month) => {
                             let marge = 0;
-                            manager.PRUs.forEach((PRU) => {
-                                if (
-                                    format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.end_date && // Vérifie si la date de début du PRU est antérieure ou égale à la date de fin du mois
-                                    format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date // Vérifie si la date de fin du PRU est postérieure ou égale à la date de début du mois
-                                ) {
-                                    value -= PRU.value * month.nb_day;
-                                    marge -= PRU.value * month.nb_day;
+                            manager.WorkedDays.forEach(workeddays => {
+                                if (workeddays.start_date == month.start_date) {
+                                    manager.PRUs.forEach((PRU) => {
+
+                                        if (
+                                            format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.end_date && // Vérifie si la date de début du PRU est antérieure ou égale à la date de fin du mois
+                                            format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date // Vérifie si la date de fin du PRU est postérieure ou égale à la date de début du mois
+                                        ) {
+                                            value -= PRU.value * workeddays.nb_day;
+                                            marge -= PRU.value * workeddays.nb_day;
+
+                                        }
+                                    });
                                 }
-                            });
+                            })
                             manager.associates.forEach((collab) => {
+                                let nb_day = 18;
+                                if (collab.WorkedDays) {
+                                    collab.WorkedDays.forEach(workedday => {
+                                        if (workedday.month_date == month.start_date) {
+                                            nb_day = workedday.nb_day
+                                        }
+                                    })
+                                }
                                 collab.Missions.forEach((mission) => {
                                     // Si la mission commence avant et fini après le mois en cours
                                     if (
@@ -159,8 +150,10 @@ module.exports = {
                                                 TJM.start_date <= month.start_date &&
                                                 TJM.end_date >= month.end_date
                                             ) {
-                                                value += TJM.value * month.nb_day;
-                                                marge += TJM.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value += TJM.value * nb_day;
+                                                marge += TJM.value * nb_day;
                                             }
                                         });
 
@@ -169,8 +162,10 @@ module.exports = {
                                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
                                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
-                                                value -= PRU.value * month.nb_day;
-                                                marge -= PRU.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value -= PRU.value * nb_day;
+                                                marge -= PRU.value * nb_day;
                                             }
                                         });
 
@@ -184,14 +179,18 @@ module.exports = {
                                                 TJM.start_date <= month.start_date &&
                                                 TJM.end_date >= month.end_date
                                             ) {
-                                                value += TJM.value * month.nb_day;
-                                                marge += TJM.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value += TJM.value * nb_day;
+                                                marge += TJM.value * nb_day;
                                             } else if (
                                                 TJM.start_date >= month.start_date &&
                                                 TJM.start_date < month.end_date
                                             ) {
-                                                value += TJM.value * month.nb_day;
-                                                marge += TJM.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value += TJM.value * nb_day;
+                                                marge += TJM.value * nb_day;
                                             }
                                         });
                                         mission.Associate.PRUs.forEach((PRU) => {
@@ -199,14 +198,18 @@ module.exports = {
                                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
                                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
-                                                value -= PRU.value * month.nb_day;
-                                                marge -= PRU.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value -= PRU.value * nb_day;
+                                                marge -= PRU.value * nb_day;
                                             } else if (
                                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") >= month.start_date &&
                                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") < month.end_date
                                             ) {
-                                                value -= PRU.value * month.nb_day;
-                                                marge -= PRU.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value -= PRU.value * nb_day;
+                                                marge -= PRU.value * nb_day;
                                             }
                                         });
 
@@ -220,14 +223,18 @@ module.exports = {
                                                 TJM.start_date <= month.start_date &&
                                                 TJM.end_date >= month.end_date
                                             ) {
-                                                value += TJM.value * month.nb_day;
-                                                marge += TJM.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value += TJM.value * nb_day;
+                                                marge += TJM.value * nb_day;
                                             } else if (
                                                 TJM.end_date >= month.start_date &&
                                                 TJM.end_date < month.end_date
                                             ) {
-                                                value += TJM.value * month.nb_day;
-                                                marge += TJM.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value += TJM.value * nb_day;
+                                                marge += TJM.value * nb_day;
                                             }
                                         });
                                         mission.Associate.PRUs.forEach((PRU) => {
@@ -235,14 +242,18 @@ module.exports = {
                                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
                                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                                             ) {
-                                                value -= PRU.value * month.nb_day;
-                                                marge -= PRU.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value -= PRU.value * nb_day;
+                                                marge -= PRU.value * nb_day;
                                             } else if (
                                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date &&
                                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") < month.end_date
                                             ) {
-                                                value -= PRU.value * month.nb_day;
-                                                marge -= PRU.value * month.nb_day;
+                                                console.log(value)
+                                                console.log(marge)
+                                                value -= PRU.value * nb_day;
+                                                marge -= PRU.value * nb_day;
                                             }
                                         });
                                     }
@@ -264,6 +275,7 @@ module.exports = {
 
     },
     calculateStatsAgence: function (req, res) {
+        const year = parseInt(req.query.year);
         if (!req.query.year) {
             return res.status(400).json({ 'error': "L'année est manquante" });
         }
@@ -277,12 +289,12 @@ module.exports = {
                         [Op.and]: [
                             {
                                 start_date: {
-                                    [Op.lt]: today()
+                                    [Op.lt]: today(year)
                                 }
                             },
                             {
                                 end_date: {
-                                    [Op.gt]: today()
+                                    [Op.gt]: today(year)
                                 }
                             }
                         ]
@@ -308,33 +320,44 @@ module.exports = {
                         }
                     ],
                 },
+                {
+                    model: db.WorkedDays,
+                    foreignKey: "associate_id"
+                }
             ],
         })
             .then((associate) => {
-                const year = parseInt(req.query.year);
-                console.log("calculateStatsAgence");
+
                 const months = generateMonthList(year)
                 let ca = 0;
                 caForMonths = [];
                 months.forEach((month) => {
                     associate.forEach((associate) => {
+                        let nb_day = 18;
+                        if (associate.WorkedDays) {
+                            associate.WorkedDays.forEach(workedday => {
+                                if (workedday.month_date == month.start_date) {
+                                    nb_day = workedday.nb_day
+                                }
+                            })
+                        }
                         associate.PRUs.forEach((PRU) => {
                             if (
                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.start_date &&
                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.end_date
                             ) {
 
-                                ca -= PRU.value * month.nb_day;
+                                ca -= PRU.value * nb_day;
                             } else if (
                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") >= month.start_date &&
                                 format(parseISO(PRU.start_date), "yyyy-MM-dd") <= month.end_date
                             ) {
-                                ca -= PRU.value * month.nb_day;
+                                ca -= PRU.value * nb_day;
                             } else if (
                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") >= month.start_date &&
                                 format(parseISO(PRU.end_date), "yyyy-MM-dd") <= month.end_date
                             ) {
-                                ca -= PRU.value * month.nb_day;
+                                ca -= PRU.value * nb_day;
                             }
                         });
                         associate.Missions.forEach((mission) => {
@@ -343,17 +366,17 @@ module.exports = {
                                     tjm.start_date <= month.start_date &&
                                     tjm.end_date >= month.end_date
                                 ) {
-                                    ca += tjm.value * month.nb_day;
+                                    ca += tjm.value * nb_day;
                                 } else if (
                                     tjm.start_date >= month.start_date &&
                                     tjm.start_date <= month.end_date
                                 ) {
-                                    ca += tjm.value * month.nb_day;
+                                    ca += tjm.value * nb_day;
                                 } else if (
                                     tjm.end_date >= month.start_date &&
                                     tjm.end_date <= month.end_date
                                 ) {
-                                    ca += tjm.value * month.nb_day;
+                                    ca += tjm.value * nb_day;
                                 }
                             });
                         });
@@ -371,6 +394,7 @@ module.exports = {
 
     },
     calculateStatsCustomer: function (req, res) {
+        const year = parseInt(req.query.year);
         if (!req.query.year) {
             return res.status(400).json({ 'error': "L'année est manquante" });
         }
@@ -388,7 +412,7 @@ module.exports = {
                             foreignKey: 'project_id',
                             where: {
                                 date_range_mission: {
-                                    [Op.contains]: [today(), today()]
+                                    [Op.contains]: [today(year), today(year)]
                                 },
                             },
                             include: [
@@ -396,10 +420,16 @@ module.exports = {
                                     model: db.Associate,
                                     foreignKey: "associate_id",
                                     include:
-                                    {
-                                        model: db.PRU,
-                                        foreignKey: "associate_id"
-                                    }
+                                        [
+                                            {
+                                                model: db.PRU,
+                                                foreignKey: "associate_id"
+                                            },
+                                            {
+                                                model: db.WorkedDays,
+                                                foreignKey: "associate_id"
+                                            }
+                                        ]
                                 },
 
                                 {
@@ -416,12 +446,19 @@ module.exports = {
             .then((customer) => {
                 let ca = 0;
                 let caOfCustomer = [];
-                const year = parseInt(req.query.year);
-                console.log("calculateStatsCustomer");
+
                 const months = generateMonthList(year)
                 months.forEach((month) => {
                     customer.Projects.forEach((project) => {
                         project.Missions.forEach((mission) => {
+                            let nb_day = 18;
+                            if (mission.Associate.WorkedDays) {
+                                mission.Associate.WorkedDays.forEach(workedday => {
+                                    if (workedday.month_date == month.start_date) {
+                                        nb_day = workedday.nb_day
+                                    }
+                                })
+                            }
                             //Si la mission commence avant et fini après le mois
                             if (
                                 mission.date_range_mission[0].value <= month.start_date &&
@@ -432,7 +469,7 @@ module.exports = {
                                         tjm.start_date <= month.start_date &&
                                         tjm.end_date >= month.end_date
                                     ) {
-                                        ca += tjm.value * month.nb_day;
+                                        ca += tjm.value * nb_day;
                                     }
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
@@ -440,7 +477,7 @@ module.exports = {
                                         format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
                                         format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
-                                        ca -= pru.value * month.nb_day;
+                                        ca -= pru.value * nb_day;
                                     }
                                 });
                                 //Si la mission commence pendant le mois et fini après
@@ -453,12 +490,12 @@ module.exports = {
                                         TJM.start_date <= month.start_date &&
                                         TJM.end_date >= month.end_date
                                     ) {
-                                        ca += TJM.value * month.nb_day;
+                                        ca += TJM.value * nb_day;
                                     } else if (
                                         TJM.start_date >= month.start_date &&
                                         TJM.start_date < month.end_date
                                     ) {
-                                        ca += TJM.value * month.nb_day;
+                                        ca += TJM.value * nb_day;
                                     }
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
@@ -466,12 +503,12 @@ module.exports = {
                                         format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
                                         format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
-                                        ca -= pru.value * month.nb_day;
+                                        ca -= pru.value * nb_day;
                                     } else if (
                                         format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
                                         format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                     ) {
-                                        ca -= pru.value * month.nb_day;
+                                        ca -= pru.value * nb_day;
                                     }
                                 });
                                 //Si la mission termine pendant le mois en cours
@@ -484,12 +521,12 @@ module.exports = {
                                         TJM.start_date <= month.start_date &&
                                         TJM.end_date >= month.end_date
                                     ) {
-                                        ca += TJM.value * month.nb_day;
+                                        ca += TJM.value * nb_day;
                                     } else if (
                                         TJM.end_date >= month.start_date &&
                                         TJM.end_date < month.end_date
                                     ) {
-                                        ca += TJM.value * month.nb_day;
+                                        ca += TJM.value * nb_day;
                                     }
                                 });
                                 mission.Associate.PRUs.forEach((pru) => {
@@ -497,12 +534,12 @@ module.exports = {
                                         format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
                                         format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                     ) {
-                                        ca -= pru.value * month.nb_day;
+                                        ca -= pru.value * nb_day;
                                     } else if (
                                         format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
                                         format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                     ) {
-                                        ca -= pru.value * month.nb_day;
+                                        ca -= pru.value * nb_day;
                                     }
                                 });
                             }
@@ -522,6 +559,8 @@ module.exports = {
     },
     calculateStatsCustomerActualMonth: function (req, res) {
 
+        const year = parseInt(req.query.year);
+
         if (!req.query.year) {
             return res.status(400).json({ 'error': "L'année est manquante" });
         }
@@ -537,7 +576,7 @@ module.exports = {
                             foreignKey: 'project_id',
                             where: {
                                 date_range_mission: {
-                                    [Op.contains]: [today(), today()]
+                                    [Op.contains]: [today(year), today(year)]
                                 },
                             },
                             include: [
@@ -545,10 +584,16 @@ module.exports = {
                                     model: db.Associate,
                                     foreignKey: "associate_id",
                                     include:
-                                    {
-                                        model: db.PRU,
-                                        foreignKey: "associate_id"
-                                    }
+                                        [
+                                            {
+                                                model: db.PRU,
+                                                foreignKey: "associate_id"
+                                            },
+                                            {
+                                                model: db.WorkedDays,
+                                                foreignKey: "associate_id"
+                                            }
+                                        ]
                                 },
 
                                 {
@@ -564,7 +609,6 @@ module.exports = {
         })
             .then((customers) => {
                 let caGlobalCustomers = [];
-                const year = parseInt(req.query.year);
                 const months = generateMonthList(year)
                 customers.forEach((customer) => {
                     let ca = 0;
@@ -572,6 +616,14 @@ module.exports = {
                     months.forEach((month) => {
                         customer.Projects.forEach((project) => {
                             project.Missions.forEach((mission) => {
+                                let nb_day = 18;
+                                if (mission.Associate.WorkedDays) {
+                                    mission.Associate.WorkedDays.forEach(workedday => {
+                                        if (workedday.month_date == month.start_date) {
+                                            nb_day = workedday.nb_day
+                                        }
+                                    })
+                                }
                                 //Si la mission commence avant et fini après le mois
                                 if (
                                     mission.date_range_mission[0].value <= month.start_date &&
@@ -582,7 +634,7 @@ module.exports = {
                                             tjm.start_date <= month.start_date &&
                                             tjm.end_date >= month.end_date
                                         ) {
-                                            ca += tjm.value * month.nb_day;
+                                            ca += tjm.value * nb_day;
                                         }
                                     });
                                     mission.Associate.PRUs.forEach((pru) => {
@@ -590,7 +642,7 @@ module.exports = {
                                             format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
                                             format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                         ) {
-                                            ca -= pru.value * month.nb_day;
+                                            ca -= pru.value * nb_day;
                                         }
                                     });
                                     //Si la mission commence pendant le mois et fini après
@@ -603,12 +655,12 @@ module.exports = {
                                             TJM.start_date <= month.start_date &&
                                             TJM.end_date >= month.end_date
                                         ) {
-                                            ca += TJM.value * month.nb_day;
+                                            ca += TJM.value * nb_day;
                                         } else if (
                                             TJM.start_date >= month.start_date &&
                                             TJM.start_date < month.end_date
                                         ) {
-                                            ca += TJM.value * month.nb_day;
+                                            ca += TJM.value * nb_day;
                                         }
                                     });
                                     mission.Associate.PRUs.forEach((pru) => {
@@ -616,12 +668,12 @@ module.exports = {
                                             format(pru.start_date, "yyyy-MM-dd") <= month.start_date &&
                                             format(pru.end_date, "yyyy-MM-dd") >= month.end_date
                                         ) {
-                                            ca -= pru.value * month.nb_day;
+                                            ca -= pru.value * nb_day;
                                         } else if (
                                             format(pru.start_date, "yyyy-MM-dd") >= month.start_date &&
                                             format(pru.end_date, "yyyy-MM-dd") < month.end_date
                                         ) {
-                                            ca -= pru.value * month.nb_day;
+                                            ca -= pru.value * nb_day;
                                         }
                                     });
                                     //Si la mission termine pendant le mois en cours
@@ -634,12 +686,12 @@ module.exports = {
                                             TJM.start_date <= month.start_date &&
                                             TJM.end_date >= month.end_date
                                         ) {
-                                            ca += TJM.value * month.nb_day;
+                                            ca += TJM.value * nb_day;
                                         } else if (
                                             TJM.end_date >= month.start_date &&
                                             TJM.end_date < month.end_date
                                         ) {
-                                            ca += TJM.value * month.nb_day;
+                                            ca += TJM.value * nb_day;
                                         }
                                     });
                                     mission.Associate.PRUs.forEach((pru) => {
@@ -647,12 +699,12 @@ module.exports = {
                                             format(parseISO(pru.start_date), "yyyy-MM-dd") <= month.start_date &&
                                             format(parseISO(pru.end_date), "yyyy-MM-dd") >= month.end_date
                                         ) {
-                                            ca -= pru.value * month.nb_day;
+                                            ca -= pru.value * nb_day;
                                         } else if (
                                             format(parseISO(pru.start_date), "yyyy-MM-dd") >= month.start_date &&
                                             format(parseISO(pru.end_date), "yyyy-MM-dd") < month.end_date
                                         ) {
-                                            ca -= pru.value * month.nb_day;
+                                            ca -= pru.value * nb_day;
                                         }
                                     });
                                 }
@@ -675,7 +727,7 @@ module.exports = {
                 // Filtrage pour obtenir le chiffre d'affaires du mois en cours
                 let caOfActualMonthCustomer = [];
                 caGlobalCustomers.forEach((month) => {
-                    if (todayYYMMAAAA() >= month.start_month && todayYYMMAAAA() <= month.end_month) {
+                    if (today(year) >= month.start_month && today(year) <= month.end_month) {
                         caOfActualMonthCustomer.push({ id: month.id, label: month.label, value: month.value, Projects: month.Projects });
                     }
                 });
