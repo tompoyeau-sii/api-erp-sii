@@ -1,4 +1,4 @@
-const db = require("../../models").gourmel.models;
+const db = require("../../models").loison.models;
 const { Op, literal } = require("sequelize");
 const {
     eachWeekOfInterval,

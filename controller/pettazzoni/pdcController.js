@@ -207,6 +207,7 @@ module.exports = {
                         })
 
                         var associate_info = {
+                            id: associate.id,
                             full_name: full_name,
                             projects: projects,
                             customers: customers,
@@ -407,6 +408,7 @@ module.exports = {
                         })
 
                         var associate_info = {
+                            id: associate.id,
                             full_name: full_name,
                             projects: projects,
                             customers: customers,

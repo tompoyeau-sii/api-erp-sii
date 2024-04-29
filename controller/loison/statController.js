@@ -1,4 +1,4 @@
-const db = require("../../models").production.models;
+const db = require("../../models").loison.models;
 const {
     startOfMonth,
     endOfMonth,

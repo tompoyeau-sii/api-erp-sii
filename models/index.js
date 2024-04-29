@@ -31,6 +31,7 @@ for (let i = 0; i < databases.length; ++i) {
   );
 }
 
+// Initialisation de la connexion avec la base de Nicolas Pettazzoni
 fs
   .readdirSync(__dirname + '/pettazzoni/')
   .filter(file =>
@@ -45,6 +46,7 @@ fs
 db.pettazzoni.sync()
 syncDb();
 
+// Initialisation de la connexion avec la base de Eric Gourmel
 fs
   .readdirSync(__dirname + '/gourmel/')
   .filter(file =>
@@ -58,6 +60,21 @@ fs
 db.gourmel.sync()
 syncDb();
 
+// Initialisation de la connexion avec la base de Ovilac Loison
+fs
+  .readdirSync(__dirname + '/loison/')
+  .filter(file =>
+    (file.indexOf('.') !== 0) &&
+    (file !== basename) &&
+    (file.slice(-3) === '.js'))
+  .forEach(file => {
+    const model = require(path.join(__dirname + '/loison', file))(db.loison, Sequelize);
+    db[model.name] = model;
+  });
+db.loison.sync()
+syncDb();
+
+// Initialisation de la connexion avec la base de production
 fs
   .readdirSync(__dirname + '/production/')
   .filter(file =>

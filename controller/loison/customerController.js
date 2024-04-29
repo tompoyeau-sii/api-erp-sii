@@ -1,4 +1,4 @@
-const db = require("../../models").pettazzoni.models;
+const db = require("../../models").loison.models;
 const {
   startOfMonth,
   endOfMonth,
@@ -106,7 +106,9 @@ module.exports = {
   findById: function (req, res) {
     const customerId = req.params.id;
     const year = parseInt(req.query.year);
-
+    if (year == null) {
+      return res.status(400).json({ error: "Année manquante" });
+    }
     db.Customer.findOne({
       where: { id: customerId },
       include: [
@@ -179,7 +181,6 @@ module.exports = {
         });
         total_tjm = total_tjm / boucle_tjm;
         total_pru = total_pru / boucle_pru;
-
         return res.status(200).json({ customer, total_tjm, total_pru });
       })
       .catch((err) => {

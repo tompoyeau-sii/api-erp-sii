@@ -177,10 +177,6 @@ module.exports = {
             }
           });
         });
-        console.log(total_tjm)
-        console.log(boucle_tjm)
-        console.log(total_pru)
-        console.log(boucle_pru)
         total_tjm = total_tjm / boucle_tjm;
         total_pru = total_pru / boucle_pru;
 
