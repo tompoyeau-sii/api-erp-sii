@@ -9,6 +9,10 @@ const motDePasse = 'root';
 
 process.env.PGPASSWORD = motDePasse;
 
+function removeAccents(str) {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 module.exports = {
     ProdToSimu: function (req, res) {
         const userId = req.body.userId;
@@ -20,7 +24,7 @@ module.exports = {
             }
         }).then(user => {
 
-            const basename = "picsou-" + user.name.toLowerCase()
+            const basename = "picsou-" + removeAccents(user.name.toLowerCase())
             // Obtenez la date et l'heure actuelles
             const now = new Date();
             const dateHeure = now.toISOString().replace(/[-:]/g, '').replace('T', '_').replace(/\..+/, '');
@@ -85,8 +89,10 @@ module.exports = {
                 return res.status(404).json({ message: "Utilisateur non trouvé." });
             }
 
-            const username = user.first_name + "." + user.name;
-            const basename = "picsou-" + user.name.toLowerCase();
+            let username = user.first_name.toLowerCase() + "." + user.name.toLowerCase();
+            let basename = "picsou-" + user.name.toLowerCase();
+            username = removeAccents(username)
+            basename = removeAccents(basename)
 
             if (!fileName) {
                 return res.status(400).json({ message: "Le titre du fichier est requis." });
@@ -147,8 +153,10 @@ module.exports = {
                 id: userId
             }
         }).then(user => {
-            const username = user.first_name + "." + user.name
-            const basename = "picsou-" + user.name.toLowerCase()
+            let username = user.first_name + "." + user.name
+            let basename = "picsou-" + user.name.toLowerCase()
+            username = removeAccents(username)
+            basename = removeAccents(basename)
 
             if (!fileName) {
                 return res.status(400).json({ message: "Le titre du fichier est requis." });
@@ -209,8 +217,11 @@ module.exports = {
                     id: otherUserId
                 }
             }).then(otherUser => {
-                const basename = "picsou-" + user.name.toLowerCase()
-                const otherUsername = otherUser.first_name + "." + otherUser.name
+                let basename = "picsou-" + user.name.toLowerCase()
+                let otherUsername = otherUser.first_name + "." + otherUser.name
+                basename = removeAccents(basename)
+                otherUsername = removeAccents(otherUsername)
+
 
                 if (!fileName) {
                     return res.status(400).json({ message: "Le titre du fichier est requis." });
@@ -271,7 +282,8 @@ module.exports = {
                 id: userId
             }
         }).then(user => {
-            const username = user.first_name + "." + user.name;
+            let username = user.first_name + "." + user.name;
+            username = removeAccents(username)
             const directoryPath = path.join(__dirname, '..', '..', 'saveBDD', `${username.toLowerCase()}`); // Chemin du répertoire saveBDD
             fs.readdir(directoryPath, function (err, files) {
                 // Gérer les erreurs liées à la lecture du répertoire
@@ -336,7 +348,9 @@ module.exports = {
                 return res.status(404).json({ message: "Utilisateur non trouvé." });
             }
 
-            const username = user.first_name + "." + user.name;
+            let username = user.first_name + "." + user.name;
+            username = removeAccents(username.toLowerCase())
+            console.log(username)
 
             if (!fileName) {
                 return res.status(400).json({ message: "Le titre du fichier est requis." });
@@ -347,7 +361,8 @@ module.exports = {
 
             // Vérifier si le fichier existe
             if (!fs.existsSync(nomFichierSauvegarde)) {
-                return res.status(404).json({ message: "Fichier de sauvegarde non trouvé." });
+                console.log("fichier de sauvegarde introuvable")
+                return res.status(404).json({ error: "Fichier de sauvegarde non trouvé." });
             }
 
             // Supprimer le fichier
