@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const apiRouterProduction = require("./routes/production/productionRouter").router;
 const apiRouterLoison = require("./routes/loison/loisonRouter").router;
 const apiRouterPettazzoni = require("./routes/pettazzoni/pettazzoniRouter").router;
+const apiRouterMaillard = require("./routes/maillard/maillardRouter").router;
 const apiRouterGourmel = require("./routes/gourmel/gourmelRouter").router;
 const cors = require('cors');
 const port = 8080;
@@ -26,6 +27,7 @@ server.get("/", function (req, res) {
 server.use("/api/production", apiRouterProduction);
 server.use("/api/pettazzoni", apiRouterPettazzoni);
 server.use("/api/gourmel", apiRouterGourmel);
+server.use("/api/maillard", apiRouterMaillard);
 server.use("/api/loison", apiRouterLoison);
 
 server.listen(port, function () {
